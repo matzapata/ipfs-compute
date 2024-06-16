@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -16,10 +17,20 @@ func NewIpfsDeploymentsRepository() *IpfsDeploymentsRepository {
 }
 
 func (dr *IpfsDeploymentsRepository) GetZippedDeployment(cid string, maxSize uint) ([]byte, error) {
-	ipfsUrl := fmt.Sprintf("https://gateway.pinata.cloud/ipfs/%s", cid)
+	return downloadFile(cid, int64(maxSize))
+}
+
+func (dt *IpfsDeploymentsRepository) GetDeploymentSpecFile(cid string) ([]byte, error) {
+	const maxSize = 1 << 20 // 1 MB
+
+	return downloadFile(cid, maxSize)
+}
+
+func downloadFile(cid string, maxSize int64) ([]byte, error) {
+	url := fmt.Sprintf("%v/ipfs/%s", os.Getenv("IPFS_GATEWAY"), cid)
 
 	// first, check the file size is within the limit
-	size, err := getFileSize(ipfsUrl)
+	size, err := getFileSize(url)
 	if err != nil {
 		return nil, err
 	}
@@ -27,13 +38,26 @@ func (dr *IpfsDeploymentsRepository) GetZippedDeployment(cid string, maxSize uin
 		return nil, fmt.Errorf("file size exceeds the limit of %d bytes", maxSize)
 	}
 
-	// download the file
-	data, err := downloadFile(ipfsUrl, size)
+	// All good, download the file
+	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to send GET request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status: %s", resp.Status)
 	}
 
-	return data, nil
+	// read the response body into a buffer
+	var buf bytes.Buffer
+	limitedReader := &io.LimitedReader{R: resp.Body, N: maxSize}
+	_, err = io.Copy(&buf, limitedReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 func getFileSize(url string) (int64, error) {
@@ -62,26 +86,4 @@ func getFileSize(url string) (int64, error) {
 	}
 
 	return size, nil
-}
-
-func downloadFile(url string, maxSize int64) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send GET request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	// read the response body into a buffer
-	var buf bytes.Buffer
-	limitedReader := &io.LimitedReader{R: resp.Body, N: maxSize}
-	_, err = io.Copy(&buf, limitedReader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	return buf.Bytes(), nil
 }

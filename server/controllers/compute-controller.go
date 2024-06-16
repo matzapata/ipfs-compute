@@ -29,6 +29,17 @@ func (c *ComputeHttpController) Compute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Get deployment specifications
+	depl, err := c.deploymentService.GetDeploymentMetadata(cid)
+	if err != nil {
+		helpers.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: verify the signature of the deployment
+
+	// TODO: check if deployment can be paid and other prechecks before executing the binary
+
 	// temp folder creation
 	tempDir, err := os.MkdirTemp("", "ipfs-compute-*")
 	if err != nil {
@@ -37,8 +48,8 @@ func (c *ComputeHttpController) Compute(w http.ResponseWriter, r *http.Request) 
 	}
 	defer os.RemoveAll(tempDir)
 
-	// get deployment
-	depl, err := c.deploymentService.GetDeployment(cid, tempDir)
+	// download deployment
+	err = c.deploymentService.GetDeployment(depl.DeploymentCid, tempDir)
 	if err != nil {
 		helpers.ErrorJSON(w, err, http.StatusInternalServerError)
 		return

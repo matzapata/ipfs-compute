@@ -14,7 +14,7 @@ import (
 
 func main() {
 	// load environment variables
-	err := godotenv.Load("../../.env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -33,7 +33,7 @@ func main() {
 	router := chi.NewRouter()
 	router.HandleFunc("/{cid}", computeController.Compute)
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Welcome to IPFS Compute"))
+		w.Write([]byte("OK"))
 	})
 
 	// start server

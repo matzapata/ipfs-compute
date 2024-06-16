@@ -1,3 +1,3 @@
 {
-    "env": ["ABC=123", "DEF=456"]
+    "env": ["NAME=matias"]
 }

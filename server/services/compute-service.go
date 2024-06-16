@@ -11,9 +11,9 @@ type ComputeService struct {
 }
 
 type ComputeResponse struct {
-	Data    string              `json:"data"`
-	Status  int                 `json:"status"`
-	Headers map[string][]string `json:"headers"`
+	Data    string            `json:"data"`
+	Status  int               `json:"status"`
+	Headers map[string]string `json:"headers"`
 }
 
 func NewComputeService() *ComputeService {
@@ -21,9 +21,15 @@ func NewComputeService() *ComputeService {
 }
 
 func (cs *ComputeService) Compute(deploymentPath string, execEnv []string) (*ComputeResponse, error) {
+	// Prepare the docker run command
+	args := []string{"run", "--rm", "-v", fmt.Sprintf("%s:/app", deploymentPath)}
+	for _, env := range execEnv {
+		args = append(args, "-e", env)
+	}
+	args = append(args, "binary_runner")
+
 	// run the binary inside the docker container
-	cmd := exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/app/binary", deploymentPath), "binary_runner")
-	cmd.Env = execEnv
+	cmd := exec.Command("docker", args...)
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer

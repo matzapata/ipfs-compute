@@ -10,9 +10,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/matzapata/ipfs-compute/cli/helpers"
+	"github.com/wabarc/ipfs-pinner/pkg/pinata"
 
 	cp "github.com/otiai10/copy"
-	"github.com/wabarc/ipfs-pinner/pkg/pinata"
 )
 
 type DeploymentSpecification struct {
@@ -55,9 +55,13 @@ var (
 	DIST_DEPLOYMENT_DIR = helpers.BuildCwdPath("dist/deployment")
 )
 
-var pnt = pinata.Pinata{Apikey: os.Getenv("PINATA_API_KEY"), Secret: os.Getenv("PINATA_SECRET")}
-
 func main() {
+	// pinata client
+	pinataApikey := os.Getenv("PINATA_API_KEY")
+	pinataSecret := os.Getenv("PINATA_SECRET")
+	fmt.Println("Pinata API Key:", pinataApikey, pinataSecret)
+	pnt := pinata.Pinata{Apikey: pinataApikey, Secret: pinataSecret}
+
 	// confirm deployment
 	fmt.Println("IPFS Compute Deployment")
 	fmt.Println(TERMS_AND_CONDITIONS)
@@ -80,9 +84,11 @@ func main() {
 
 	// zip deployment files and pin it to ipfs
 	err = buildDeploymentZip()
+	fmt.Println("Deployment files zipped %v", DIST_ZIP_FILE)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Deployment files zipped %v", DIST_ZIP_FILE)
 	cidDeploymentZip, err := pnt.PinFile(DIST_ZIP_FILE)
 	if err != nil {
 		log.Fatal(err)

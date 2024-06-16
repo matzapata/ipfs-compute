@@ -44,7 +44,7 @@ func (c *ComputeHttpController) Compute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// reduce user balance in escrow contract. Extract payer from header or deployment
+	// TODO: reduce user balance in escrow contract. Extract payer from header or deployment
 
 	// execute binary and give response
 	resultJSON, err := c.computeService.Compute(tempDir, depl.Env)

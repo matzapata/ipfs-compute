@@ -15,14 +15,9 @@ type DeploymentService struct {
 	repo repositories.DeploymentsRepository
 }
 
-type DeploymentMetadataJson struct {
-	Owner string `json:"owner"` // owner address encrypted with our public key
-	Env   string `json:"env"`   // environment variables in format "KEY=VALUE;KEY2=VALUE2" encrypted with our public key
-}
-
 type DeploymentMetadata struct {
-	Owner string
-	Env   []string
+	Owner string   `json:"owner"` // owner address. If no payer specified we default to this one
+	Env   []string `json:"env"`   // environment variables in format "KEY=VALUE;KEY2=VALUE2"
 }
 
 func NewDeploymentService(repo *repositories.DeploymentsRepository) *DeploymentService {
@@ -60,12 +55,10 @@ func (d *DeploymentService) GetDeployment(cid string, dstDir string) (*Deploymen
 
 	// read spec file
 	specFilePath := filepath.Join(dstDir, DEPLOYMENT_SPEC_FILE)
-	metadata, err := readDeploymentSpecFile(specFilePath)
+	metadata, err := d.readDeploymentSpecFile(specFilePath)
 	if err != nil {
 		return nil, err
 	}
-
-	// decrypt owner address and env vars
 
 	return &DeploymentMetadata{
 		Owner: metadata.Owner,
@@ -73,7 +66,7 @@ func (d *DeploymentService) GetDeployment(cid string, dstDir string) (*Deploymen
 	}, nil
 }
 
-func readDeploymentSpecFile(deploymentJsonFilePath string) (*DeploymentMetadata, error) {
+func (d *DeploymentService) readDeploymentSpecFile(deploymentJsonFilePath string) (*DeploymentMetadata, error) {
 	// open the JSON file
 	file, err := os.Open(deploymentJsonFilePath)
 	if err != nil {
@@ -82,16 +75,26 @@ func readDeploymentSpecFile(deploymentJsonFilePath string) (*DeploymentMetadata,
 	defer file.Close()
 
 	// read the file contents
-	jsonData, err := io.ReadAll(file)
+	encDeplMetadataStr, err := io.ReadAll(file)
 	if err != nil {
 		return nil, fmt.Errorf("error reading file: %v", err)
 	}
 
+	// decrypt the JSON data
+	privateKey, err := helpers.LoadPrivateKeyFromString(os.Getenv("PRIVATE_KEY"))
+	if err != nil {
+		return nil, fmt.Errorf("error loading private key: %v", err)
+	}
+	decDeplMetadataStr, err := helpers.DecryptBytes(privateKey, encDeplMetadataStr)
+	if err != nil {
+		return nil, fmt.Errorf("error decrypting JSON data: %v", err)
+	}
+
 	// unmarshal the JSON data
 	var metadata DeploymentMetadata
-	err = json.Unmarshal(jsonData, &metadata)
+	err = json.Unmarshal(decDeplMetadataStr, &metadata)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling json: %v", err)
+		return nil, fmt.Errorf("error unmarshalling metadata json: %v", err)
 	}
 
 	return &metadata, nil

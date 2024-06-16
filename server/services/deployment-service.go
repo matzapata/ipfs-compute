@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/matzapata/ipfs-compute/helpers"
-	"github.com/matzapata/ipfs-compute/repositories"
+	"github.com/matzapata/ipfs-compute/server/helpers"
+	"github.com/matzapata/ipfs-compute/server/repositories"
 )
 
 type DeploymentService struct {

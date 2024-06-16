@@ -1,4 +1,4 @@
-module github.com/matzapata/ipfs-compute
+module github.com/matzapata/ipfs-compute/server
 
 go 1.22.0
 

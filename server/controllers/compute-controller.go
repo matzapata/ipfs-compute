@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/go-chi/chi"
-	"github.com/matzapata/ipfs-compute/helpers"
-	"github.com/matzapata/ipfs-compute/services"
+	"github.com/matzapata/ipfs-compute/server/helpers"
+	"github.com/matzapata/ipfs-compute/server/services"
 )
 
 type ComputeHttpController struct {

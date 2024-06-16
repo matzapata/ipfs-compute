@@ -6,10 +6,10 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
-	"github.com/matzapata/ipfs-compute/controllers"
-	"github.com/matzapata/ipfs-compute/repositories"
-	ipfsRepositories "github.com/matzapata/ipfs-compute/repositories/ipfs"
-	services "github.com/matzapata/ipfs-compute/services"
+	"github.com/matzapata/ipfs-compute/server/controllers"
+	"github.com/matzapata/ipfs-compute/server/repositories"
+	ipfsRepositories "github.com/matzapata/ipfs-compute/server/repositories/ipfs"
+	services "github.com/matzapata/ipfs-compute/server/services"
 )
 
 func main() {

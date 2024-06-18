@@ -3,14 +3,124 @@
 TODO: Timeout docker running 15 secs or so
 TODO: Pass method, headers and so on as args. Also allow more control on communication between processes so it works like a full server
 
+## Design
 
-# Design
+Programs are binaries with curl interface. Imagine that, call a endpoint with curl but instead of processing the response elsewhere we process it right there, curl is the interface.
 
 
-## Request flow
+###  Allow provider spending
 
-[![](https://mermaid.ink/img/pako:eNp9UsFO4zAQ_ZXRXDftEpSk1Af2sFSIw4oVhQMoFyuZtNE2dhg7hRDl37ETAqhS1id73ps3M8_TYaZzQoGGnhtSGV2VcseyShW482CIF5eXP7bER2IBf2-39_Czy8q8hy6XVvYjb8Q986YujIDrzUQbcR916GLSuaL6oNuKlIWKrPRK0OkXRRxA7jBwqQGQOsJRsjkt8qWScVt_SczQNq-WZWahli0xFKwrYD-ssb5YIZuDBathKH86zsZkrF_EYATspXE96Wa3h6JRufFZThQKzZPir1FgTPs-8SOZ_1k1DT3jV_7p1_KtrOea_L2XvKOplblObv_N-HTXqBNk4cd2AJlaK0PpB44BVsSVLHO3N52PpWj3VFGKwl0_PE0xVb2jysbqbasyFJYbCrCp3V9Na4aikAfjorVUKDp8RREly7MoicMoSpJVHMYBtihW0XIdXiTnZ-tVFIcXcdwH-Ka1yw8DpLy0mv-Mezysc4Dsv-m7-tPAHt79O23u-Lg?type=png)](https://mermaid.live/edit#pako:eNp9UsFO4zAQ_ZXRXDftEpSk1Af2sFSIw4oVhQMoFyuZtNE2dhg7hRDl37ETAqhS1id73ps3M8_TYaZzQoGGnhtSGV2VcseyShW482CIF5eXP7bER2IBf2-39_Czy8q8hy6XVvYjb8Q986YujIDrzUQbcR916GLSuaL6oNuKlIWKrPRK0OkXRRxA7jBwqQGQOsJRsjkt8qWScVt_SczQNq-WZWahli0xFKwrYD-ssb5YIZuDBathKH86zsZkrF_EYATspXE96Wa3h6JRufFZThQKzZPir1FgTPs-8SOZ_1k1DT3jV_7p1_KtrOea_L2XvKOplblObv_N-HTXqBNk4cd2AJlaK0PpB44BVsSVLHO3N52PpWj3VFGKwl0_PE0xVb2jysbqbasyFJYbCrCp3V9Na4aikAfjorVUKDp8RREly7MoicMoSpJVHMYBtihW0XIdXiTnZ-tVFIcXcdwH-Ka1yw8DpLy0mv-Mezysc4Dsv-m7-tPAHt79O23u-Lg)
+```mermaid
+sequenceDiagram
+    User->>+Escrow: Deposit usdc
+    Escrow->>-User: ok
+    User->>+ENS: getResolver(providerDomain)
+    ENS->>-User: resolverAddress
+    User->>+Resolver: getAddress()
+    Resolver->>-User: providerAddress
+    User->>+Escrow: allow(providerAddress, pricePerCredit, credits)
+    Escrow->>-User: ok
+```
 
-## Create deployment
+###  Make request to provider
 
-[![](https://mermaid.ink/img/pako:eNp9Uk1PwzAM_SuWr3QVRW0HOSCh7TIhJKRpB1AvofG2QJuEJC2Uaf-dtIOx8ZVLkudn-_ljg6UWhAwdPTekSppKvrK8LhSEs3BkR5eXJ5NKMhBkKt3Bxjxtd9aA9saexODKGKtbAk-2dsCVgFIrIb3Uyh0FGw3B7sgdBhmwuVypf_wPmBNdG1kRON3YkqAvYXAxlgy3BG_SHEmcmaVjsAj6ufiooybl4z2vJ-y1fRGglOJH8ishenxIGDpmO-PD3ULLrYMX6dcQCm3Jwm3zUMkSrqn7W4wzVMaPTqtfdPS27wpGu25PvyROZtNCFR_-GGEdGsilCCPd9FiBfk01FcjCU9CSN5UvsFDbQOWN1_NOlci8bSjCxgjuPzcA2ZJXLqCGK2QbfEWW5vFpmmdJmub5OEuyCDtk4zS-SM7zs9OLcZol51m2jfBN6-CfREhhgtre7FZs2LQIrW5W68Po9wN7-G_fAenF03o?type=png)](https://mermaid.live/edit#pako:eNp9Uk1PwzAM_SuWr3QVRW0HOSCh7TIhJKRpB1AvofG2QJuEJC2Uaf-dtIOx8ZVLkudn-_ljg6UWhAwdPTekSppKvrK8LhSEs3BkR5eXJ5NKMhBkKt3Bxjxtd9aA9saexODKGKtbAk-2dsCVgFIrIb3Uyh0FGw3B7sgdBhmwuVypf_wPmBNdG1kRON3YkqAvYXAxlgy3BG_SHEmcmaVjsAj6ufiooybl4z2vJ-y1fRGglOJH8ishenxIGDpmO-PD3ULLrYMX6dcQCm3Jwm3zUMkSrqn7W4wzVMaPTqtfdPS27wpGu25PvyROZtNCFR_-GGEdGsilCCPd9FiBfk01FcjCU9CSN5UvsFDbQOWN1_NOlci8bSjCxgjuPzcA2ZJXLqCGK2QbfEWW5vFpmmdJmub5OEuyCDtk4zS-SM7zs9OLcZol51m2jfBN6-CfREhhgtre7FZs2LQIrW5W68Po9wN7-G_fAenF03o)
+```mermaid
+sequenceDiagram
+    User->>+ENS: getResolver(providerDomain)
+    ENS->>-User: resolverAddress
+    User->>+Resolver: getWebDomain()
+    Resolver->>-User: domain
+    User->>+Provider: POST {domain}/{cid} {data} {optional payer header}
+    Provider->>-User: Response
+```
+
+###  Provider program execution
+
+```mermaid
+sequenceDiagram
+    User->>+Provider: POST {domain}/{cid} {data} {optional payer header (default to owner)}
+    Provider->>+IPFS: GET {cid}
+    IPFS->>-Provider: spec.json
+    Provider->>Provider: dec(spec.json)
+    Provider->>+Escrow: Get allowance(payer)
+    Escrow->>-Provider: 100 credits at 1 USDC per credit
+    alt Provider allowed to withdraw 1 credit at price lower than allowed
+    Provider->>+Escrow: consume(price, permit)
+    Escrow->>Escrow: Reduce available credits
+    Escrow->>-Provider: Ok
+    Provider->>Provider: Process request
+    Provider-->>User: Response
+    else Provider now allowed due to credits or price
+    Provider->>+Escrow: consume(price, permit)
+    Escrow->>-Provider: FAIL
+    Provider-->>-User: FAIL
+    end
+```
+
+###  Register provider
+
+```mermaid
+sequenceDiagram
+    Provider->>+Resolver: deploy(address, domain, publicKey)
+    Resolver->>-Provider: resolverAddress
+    Provider->>+ENS: register(hash(domain), resolverAddress)
+    ENS->>-Provider: ok
+```
+
+###  Deployment
+
+```mermaid
+sequenceDiagram
+    User->>User: Compile source code
+    User->>+IPFS: Upload zipped program
+    IPFS->>-User: cid
+    User->>User: Attach cid to spec
+    User->>User: Sign T&C and add to spec
+    User->>User: Add env vars to spec
+    User->>+ENS: getResolver(providerDomain)
+    ENS->>-User: resolverAddress
+    User->>+Resolver: getPublicKey()
+    Resolver->>-User: PublicKey
+    User->>User: Encrypt deployment spec
+    User->>+IPFS: encrypted spec
+    IPFS->>-User: deploymentCid
+```
+
+## Contracts
+
+### Credits escrow
+
+```solidity
+
+interface Escrow {
+    // transfer usdc to escrow
+    deposit(usdc amount) 
+
+    withdraw()
+
+    consume(price, request_hash, permit) onlyProvider -> (permit contains price, request hash)
+
+    allowance(provider, budget) -> user allows provider to consume from his credits
+}
+
+```
+
+
+### ENS registry
+
+```solidity
+map provider_domain -> resolver
+
+register(domain, resolver)
+
+getResolver(domain) -> resolver
+```
+
+### ENS resolver
+
+```solidity
+address()
+public_key()
+domain()
+```
+

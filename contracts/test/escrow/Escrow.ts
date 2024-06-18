@@ -5,7 +5,7 @@ import hre from "hardhat";
 describe('CreditsEscrow', function () {
     const INITIAL_BALANCE = hre.ethers.parseUnits('1000', 6); // Initial USDC balance for testing (scaled to 6 decimal places)
 
-    async function deployEmptyFixture() {
+    async function deployFixture() {
         // Contracts are deployed using the first signer/account by default
         const [owner, user1, user2, provider] = await hre.ethers.getSigners();
 
@@ -26,7 +26,7 @@ describe('CreditsEscrow', function () {
     }
 
     it('should deposit USDC into the escrow contract', async function () {
-        const { user1, usdcToken, creditsEscrow } = await loadFixture(deployEmptyFixture);
+        const { user1, usdcToken, creditsEscrow } = await loadFixture(deployFixture);
 
         const depositAmount = hre.ethers.parseUnits('100', 6);
 
@@ -38,7 +38,7 @@ describe('CreditsEscrow', function () {
     });
 
     it('should withdraw USDC from the escrow contract', async function () {
-        const { user1, usdcToken, creditsEscrow } = await loadFixture(deployEmptyFixture);
+        const { user1, usdcToken, creditsEscrow } = await loadFixture(deployFixture);
 
         // First deposit USDC into the escrow contract
         const depositAmount = hre.ethers.parseUnits('100', 6);
@@ -53,7 +53,7 @@ describe('CreditsEscrow', function () {
     });
 
     it('should allow provider to consume credits from user', async function () {
-        const { user1, provider, usdcToken, creditsEscrow } = await loadFixture(deployEmptyFixture);
+        const { user1, provider, usdcToken, creditsEscrow } = await loadFixture(deployFixture);
 
         const depositAmount = hre.ethers.parseUnits('100', 6);
         const price = hre.ethers.parseUnits('50', 6);
@@ -73,7 +73,7 @@ describe('CreditsEscrow', function () {
     });
 
     it('should not allow provider to consume credits above approved price', async function () {
-        const { user1, provider, usdcToken, creditsEscrow } = await loadFixture(deployEmptyFixture);
+        const { user1, provider, usdcToken, creditsEscrow } = await loadFixture(deployFixture);
 
         const depositAmount = hre.ethers.parseUnits('100', 6);
         const price = hre.ethers.parseUnits('50', 6);
@@ -93,7 +93,7 @@ describe('CreditsEscrow', function () {
     });
 
     it('should not allow provider to consume credits above approved allowance', async function () {
-        const { user1, provider, usdcToken, creditsEscrow } = await loadFixture(deployEmptyFixture);
+        const { user1, provider, usdcToken, creditsEscrow } = await loadFixture(deployFixture);
 
         const depositAmount = hre.ethers.parseUnits('100', 6);
         const price = hre.ethers.parseUnits('50', 6);

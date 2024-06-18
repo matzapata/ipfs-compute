@@ -16,7 +16,7 @@ contract Registry {
     // Permits modifications only by the owner of the specified node.
     modifier onlyOwner(bytes32 domain) {
         address domainOwner = records[domain].owner;
-        require(domainOwner == msg.sender);
+        require(domainOwner == msg.sender, "Only the owner can modify the resolver");
         _;
     }
 

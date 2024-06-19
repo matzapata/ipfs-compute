@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract CreditsEscrow is Ownable {
+contract Escrow is Ownable {
     using Math for uint256;
 
     IERC20 public usdcToken;
@@ -53,7 +53,7 @@ contract CreditsEscrow is Ownable {
 
         bool success = usdcToken.transfer(msg.sender, amount);
         require(success, "USDC transfer failed");
-        
+
         emit Widthdraw(msg.sender, amount);
     }
 

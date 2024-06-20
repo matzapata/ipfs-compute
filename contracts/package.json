@@ -8,6 +8,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.2",
     "dotenv": "^16.4.5",
+    "js-sha3": "^0.9.3",
     "minimist": "^1.2.8"
   }
 }

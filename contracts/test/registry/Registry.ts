@@ -1,6 +1,7 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
+import { keccak_256 as sha3 } from 'js-sha3';
 
 
 describe('Registry', function () {
@@ -13,9 +14,9 @@ describe('Registry', function () {
         const registry = await Registry.deploy();
 
         // dummy values for testing
-        const resolver = user.address; 
-        const domain = hre.ethers.encodeBytes32String('provider.eth');
-        
+        const resolver = user.address;
+        const domain = "0x" + sha3("provider.pelmeni");
+
         return { owner, user, registry, resolver, domain };
     }
 

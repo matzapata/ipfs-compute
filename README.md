@@ -87,3 +87,4 @@ sequenceDiagram
 
 TODO: Timeout docker running 15 secs or so
 TODO: Pass method, headers and so on as args. Also allow more control on communication between processes so it works like a full server
+TODO: Create library for hashing domains (https://github.com/Arachnid/eth-ens-namehash/blob/master/index.js) maybe even assign all to owner and owner manages it (https://github.com/ensdomains/ens-contracts/blob/8e8cf71bc50fb1a5055dcf3d523d2ed54e725d28/contracts/registry/ENSRegistry.sol#L29)

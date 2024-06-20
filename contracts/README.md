@@ -10,6 +10,7 @@ Resolver: 0xB4459f11f71E23e6E627694A702414017B7BfB96
 Deployed with: 0x01aA5423d4671E27919b48d8023ab115559cbbe2
 
 Resolver registered
+Domain: provider.pelmeni
 Owner: 0x01aA5423d4671E27919b48d8023ab115559cbbe2
 Resolver: 0xB4459f11f71E23e6E627694A702414017B7BfB96
 
@@ -44,7 +45,7 @@ Register domain
 ```shell
 export RESOLVER_ADDRESS="0xB4459f11f71E23e6E627694A702414017B7BfB96"
 export REGISTRY_ADDRESS="0xdb42A86B1bfe04E75B2A5F2bF7a3BBB52D7FFD2F"
-export DOMAIN="domain.pelmeni"
+export DOMAIN="provider.pelmeni"
 npx hardhat run scripts/register-resolver.ts --network polygon
 ```
 

@@ -1,4 +1,5 @@
 import hre from "hardhat";
+import { keccak_256 as sha3 } from 'js-sha3';
 
 async function main() {
     // Parse the arguments
@@ -19,13 +20,13 @@ async function main() {
     console.log("Registering Resolver with the account:", deployer.address);
 
     const Registry = await hre.ethers.getContractAt("Registry", registryAddress);
-    const domainBytes = hre.ethers.encodeBytes32String(domain);
-    const tx = await Registry.register(domainBytes, resolverAddress);
+    const hashedDomain = "0x" + sha3(domain);
+    const tx = await Registry.register(hashedDomain, resolverAddress);
     await tx.wait();
 
     // Check if the resolver is registered
-    const owner = await Registry.owner(domainBytes);
-    const resolver = await Registry.resolver(domainBytes);
+    const owner = await Registry.owner(hashedDomain);
+    const resolver = await Registry.resolver(hashedDomain);
     
     console.log("Resolver registered");
     console.log("Owner:", owner);

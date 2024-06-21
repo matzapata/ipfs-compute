@@ -61,7 +61,7 @@ func (*DeploymentService) BuildDeploymentZip() error {
 
 func (*DeploymentService) BuildDeploymentSpecification(deploymentZipCid string, signature *helpers.Signature, providerPublicKey string) error {
 	// load public key
-	ipfsComputePublicKey, err := helpers.LoadPublicKeyFromString(providerPublicKey)
+	ipfsComputePublicKey, err := helpers.RsaLoadPublicKeyFromString(providerPublicKey)
 	if err != nil {
 		log.Fatal(err)
 	}

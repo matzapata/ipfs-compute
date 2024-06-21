@@ -43,6 +43,21 @@ func (r *RegistryService) ResolveDomain(domain string) (*contracts.Resolver, err
 	return contracts.NewResolver(resolverAddress, r.EthClient)
 }
 
+func (r *RegistryService) RegisterDomain(hexPrivateKey string, domain string, resolverAddress string) (string, error) {
+	auth, err := buildAuth(hexPrivateKey, r.EthClient)
+	if err != nil {
+		return "", err
+	}
+
+	// Register domain
+	tx, err := r.Registry.Register(auth, hashDomain(domain), common.HexToAddress(resolverAddress))
+	if err != nil {
+		return "", err
+	}
+
+	return tx.Hash().Hex(), nil
+}
+
 func hashDomain(input string) [32]byte {
 	hash := sha3.NewLegacyKeccak256()
 	_, _ = hash.Write([]byte(input))

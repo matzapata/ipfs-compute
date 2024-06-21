@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha512"
@@ -10,6 +11,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -48,8 +50,8 @@ func EncryptBytes(publicKey *rsa.PublicKey, data []byte) ([]byte, error) {
 		nil)
 }
 
-// LoadPublicKeyFromString loads a public RSA key from a string
-func LoadPublicKeyFromString(publicKeyStr string) (*rsa.PublicKey, error) {
+// RsaLoadPublicKeyFromString loads a public RSA key from a string
+func RsaLoadPublicKeyFromString(publicKeyStr string) (*rsa.PublicKey, error) {
 	block, _ := pem.Decode([]byte(publicKeyStr))
 	if block == nil || (block.Type != "PUBLIC KEY" && block.Type != "RSA PUBLIC KEY") {
 		return nil, fmt.Errorf("failed to decode PEM block containing public key")
@@ -73,12 +75,26 @@ func LoadPublicKeyFromString(publicKeyStr string) (*rsa.PublicKey, error) {
 	return nil, fmt.Errorf("failed to parse public key: %v", err)
 }
 
-// LoadPublicKeyFromFile loads a public RSA key from a file
-func LoadPublicKeyFromFile(path string) (*rsa.PublicKey, error) {
+// RsaLoadPublicKeyFromFile loads a public RSA key from a file
+func RsaLoadPublicKeyFromFile(path string) (*rsa.PublicKey, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("error reading file: %v", err)
 	}
 
-	return LoadPublicKeyFromString(string(data))
+	return RsaLoadPublicKeyFromString(string(data))
+}
+
+func EthPrivateKeyToAddress(hexPrivateKey string) (common.Address, error) {
+	privateKey, err := crypto.HexToECDSA(hexPrivateKey)
+	if err != nil {
+		return common.Address{}, err
+	}
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return common.Address{}, err
+	}
+
+	return crypto.PubkeyToAddress(*publicKeyECDSA), nil
 }

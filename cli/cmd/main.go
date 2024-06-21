@@ -16,14 +16,14 @@ func main() {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "ipfs-compute",
-		Short: "Create and manage IPFS Compute deployments",
+		Use:   "khachapuri",
+		Short: "Create and manage kachapuri deployments",
 	}
 
 	// Define the deploy command
 	deployCmd := &cobra.Command{
 		Use:   "deploy --private-key <owner private key> --provider <provider>",
-		Short: "Deploy a new application to IPFS Compute",
+		Short: "Deploy a new application to kachapuri",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			// get variables from env
@@ -38,7 +38,7 @@ func main() {
 			commands.DeployCommand(privateKey, provider, pinataApiKey, pinataSecret, rpc)
 		},
 	}
-	deployCmd.Flags().StringP("provider", "", "", "IPFS Compute provider domain")
+	deployCmd.Flags().StringP("provider", "", "", "kachapuri provider domain")
 
 	// Allowance command
 	allowanceCommand := &cobra.Command{
@@ -77,10 +77,44 @@ func main() {
 	depositCommand.Flags().UintP("amount", "", 0, "Amount to deposit")
 
 	// Withdraw command
+	withdrawCommand := &cobra.Command{
+		Use:   "withdraw --amount <amount>",
+		Short: "Withdraw funds from the escrow account",
+		Args:  cobra.ExactArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			// get variables from env
+			rpc := os.Getenv("RPC")
+			privateKey := os.Getenv("PRIVATE_KEY")
+
+			// get variables from flags
+			amount, _ := cmd.Flags().GetUint("amount")
+
+			commands.WithdrawCommand(privateKey, amount, rpc)
+		},
+	}
+	withdrawCommand.Flags().UintP("amount", "", 0, "Amount to withdraw")
 
 	// Approve command
+	approveCommand := &cobra.Command{
+		Use:   "approve --amount <amount> --price <price> --provider <domain>",
+		Short: "Approve the provider to consume USDC from the user's account",
+		Args:  cobra.ExactArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			// get variables from env
+			rpc := os.Getenv("RPC")
+			privateKey := os.Getenv("PRIVATE_KEY")
 
-	// Register command
+			// get variables from flags
+			amount, _ := cmd.Flags().GetUint("amount")
+			price, _ := cmd.Flags().GetUint("price")
+			provider, _ := cmd.Flags().GetString("provider")
+
+			commands.ApproveCommand(privateKey, rpc, amount, price, provider)
+		},
+	}
+	approveCommand.Flags().UintP("amount", "", 0, "Amount to approve")
+	approveCommand.Flags().UintP("price", "", 0, "Price per request")
+	approveCommand.Flags().StringP("provider", "", "", "Provider domain")
 
 	// Balance command
 	balanceCommand := &cobra.Command{
@@ -116,8 +150,17 @@ func main() {
 	}
 	resolveCmd.Flags().StringP("domain", "", "", "Domain to resolve")
 
+	// TODO: Command to deploy resolver and register it
+
 	// Add the commands to the root command
-	rootCmd.AddCommand(deployCmd, resolveCmd, balanceCommand, allowanceCommand, depositCommand)
+	rootCmd.AddCommand(
+		deployCmd,
+		resolveCmd,
+		balanceCommand,
+		allowanceCommand,
+		depositCommand,
+		withdrawCommand,
+	)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

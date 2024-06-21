@@ -1,3 +1,9 @@
+# Khachapuri - Decentralized IPFS based compute
+
+Imagine AWS lambdas for IPFS compute, host your code in IPFS and make it worldwide available. You have a server, offer your compute power and get paid, you want cheap decentralized serverless functions, host your code, protect your secrets and pay with usdc.
+
+Why khachapuri? It's just mindbogglingly delicious and palta was already taken.
+
 
 ## Design
 

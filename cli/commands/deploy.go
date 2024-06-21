@@ -15,7 +15,6 @@ func DeployCommand(privateKey string, provider string, pinataApiKey string, pina
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	deploymentService := services.NewDeploymentService()
 	ipfsService := services.NewIpfsService(pinataApiKey, pinataSecret)
 	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)

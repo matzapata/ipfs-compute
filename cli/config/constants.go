@@ -20,3 +20,4 @@ const TERMS_AND_CONDITIONS = "Deploy to IPFS Compute. Code will be runnable by e
 
 const REGISTRY_ADDRESS = "0xdb42A86B1bfe04E75B2A5F2bF7a3BBB52D7FFD2F"
 const ESCROW_ADDRESS = "0x"
+const USDC_ADDRESS = "0x"

@@ -1,4 +1,4 @@
-BINARY_NAME=khachapuri-provider
+BINARY_NAME=main
 GOOS=linux
 GOARCH=amd64
 

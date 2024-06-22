@@ -2,10 +2,14 @@ package main
 
 import (
 	"log"
+	"math/big"
 	"net/http"
+	"os"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
+	"github.com/matzapata/ipfs-compute/server/config"
 	"github.com/matzapata/ipfs-compute/server/controllers"
 	"github.com/matzapata/ipfs-compute/server/repositories"
 	ipfsRepositories "github.com/matzapata/ipfs-compute/server/repositories/ipfs"
@@ -18,6 +22,16 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+	RPC_URL := os.Getenv("RPC_URL")
+	UNIT_PRICE := new(big.Int)
+	UNIT_PRICE.SetString(os.Getenv("UNIT_PRICE"), 10)
+	PROVIDER_ECDSA_PRIVATE_KEY := os.Getenv("PROVIDER_ECDSA_PRIVATE_KEY")
+
+	// eth client
+	client, err := ethclient.Dial(RPC_URL)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// repositories
 	var deploymentRepository repositories.DeploymentsRepository = ipfsRepositories.NewIpfsDeploymentsRepository()
@@ -25,9 +39,16 @@ func main() {
 	// services
 	computeService := services.NewComputeService()
 	deploymentService := services.NewDeploymentService(&deploymentRepository)
+	escrowService := services.NewEscrowService(client, config.ESCROW_ADDRESS)
 
 	// controllers
-	computeController := controllers.NewComputeHttpController(computeService, deploymentService)
+	computeController := controllers.NewComputeHttpController(
+		computeService,
+		deploymentService,
+		escrowService,
+		UNIT_PRICE,
+		PROVIDER_ECDSA_PRIVATE_KEY,
+	)
 
 	// router
 	router := chi.NewRouter()

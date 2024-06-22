@@ -8,6 +8,7 @@ import (
 	"github.com/matzapata/ipfs-compute/cli/config"
 	"github.com/matzapata/ipfs-compute/cli/helpers"
 	"github.com/matzapata/ipfs-compute/cli/services"
+	"github.com/matzapata/ipfs-compute/shared/cryptoecdsa"
 )
 
 func DeployCommand(privateKey string, provider string, pinataApiKey string, pinataSecret string, rpc string) {
@@ -27,7 +28,7 @@ func DeployCommand(privateKey string, provider string, pinataApiKey string, pina
 	}
 
 	// create signature
-	signature, err := helpers.SignMessage([]byte(config.TERMS_AND_CONDITIONS), privateKey)
+	signature, err := cryptoecdsa.SignMessage([]byte(config.TERMS_AND_CONDITIONS), privateKey)
 	if err != nil {
 		log.Fatal(err)
 	}

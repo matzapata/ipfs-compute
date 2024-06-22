@@ -7,6 +7,8 @@ import (
 
 	"github.com/matzapata/ipfs-compute/cli/config"
 	"github.com/matzapata/ipfs-compute/cli/helpers"
+	"github.com/matzapata/ipfs-compute/shared/cryptoecdsa"
+	"github.com/matzapata/ipfs-compute/shared/cryptorsa"
 	cp "github.com/otiai10/copy"
 )
 
@@ -59,9 +61,9 @@ func (*DeploymentService) BuildDeploymentZip() error {
 	return nil
 }
 
-func (*DeploymentService) BuildDeploymentSpecification(deploymentZipCid string, signature *helpers.Signature, providerPublicKey string) error {
+func (*DeploymentService) BuildDeploymentSpecification(deploymentZipCid string, signature *cryptoecdsa.Signature, providerPublicKey string) error {
 	// load public key
-	ipfsComputePublicKey, err := helpers.RsaLoadPublicKeyFromString(providerPublicKey)
+	ipfsComputePublicKey, err := cryptorsa.LoadPublicKeyFromString(providerPublicKey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,7 +92,7 @@ func (*DeploymentService) BuildDeploymentSpecification(deploymentZipCid string, 
 	if err != nil {
 		return err
 	}
-	encDeploymentJson, err := helpers.EncryptBytes(ipfsComputePublicKey, deploymentJson)
+	encDeploymentJson, err := cryptorsa.EncryptBytes(ipfsComputePublicKey, deploymentJson)
 	if err != nil {
 		return err
 	}

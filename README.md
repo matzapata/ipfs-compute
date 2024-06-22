@@ -88,9 +88,18 @@ sequenceDiagram
     IPFS->>-User: deploymentCid
 ```
 
+### Reverse proxy
+
+
+{provider}.khachapuri.xyz:  
+
+Resolves {provider} and acts a universal entry safe point to providers
+
 
 ## TODOS
 
+
 TODO: Timeout docker running 15 secs or so
-TODO: Pass method, headers and so on as args. Also allow more control on communication between processes so it works like a full server
+TODO: Pass method, headers and so on as args. Also allow more control on communication between processes so it works like a full server (curl interface, make curl command from current request)
+TODO: Allow unencrypted deployments, anybody can run. Cool also if there can be more than one runner
 TODO: Create library for hashing domains (https://github.com/Arachnid/eth-ens-namehash/blob/master/index.js) maybe even assign all to owner and owner manages it (https://github.com/ensdomains/ens-contracts/blob/8e8cf71bc50fb1a5055dcf3d523d2ed54e725d28/contracts/registry/ENSRegistry.sol#L29)

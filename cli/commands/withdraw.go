@@ -7,8 +7,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/cli/config"
-	"github.com/matzapata/ipfs-compute/cli/helpers"
 	"github.com/matzapata/ipfs-compute/cli/services"
+	"github.com/matzapata/ipfs-compute/shared/cryptoecdsa"
 )
 
 // Withdraw funds from the escrow account
@@ -28,7 +28,7 @@ func WithdrawCommand(privateKey string, amount uint, rpc string) {
 	}
 
 	// Check balance
-	address, err := helpers.EthPrivateKeyToAddress(privateKey)
+	address, err := cryptoecdsa.PrivateKeyToAddress(privateKey)
 	if err != nil {
 		log.Fatal(err)
 	}

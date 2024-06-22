@@ -5,8 +5,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/matzapata/ipfs-compute/cli/contracts"
-	"golang.org/x/crypto/sha3"
+
+	"github.com/matzapata/ipfs-compute/shared/contracts"
+	registry "github.com/matzapata/ipfs-compute/shared/registry"
 )
 
 type RegistryService struct {
@@ -30,11 +31,11 @@ func NewRegistryService(client *ethclient.Client, registryAddress string) *Regis
 // Resolve the domain to get the provider
 func (r *RegistryService) ResolveDomain(domain string) (*contracts.Resolver, error) {
 	// get resolver address and instantiate it
-	resolverAddress, err := r.Registry.Resolver(nil, hashDomain(domain))
+	resolverAddress, err := r.Registry.Resolver(nil, registry.HashDomain(domain))
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Resolver address for domain %s: %s\n", fmt.Sprintf("%x", hashDomain(domain)), resolverAddress.Hex())
+	fmt.Printf("Resolver address for domain %s: %s\n", fmt.Sprintf("%x", registry.HashDomain(domain)), resolverAddress.Hex())
 
 	if resolverAddress == common.HexToAddress("0x000000000000000000000000000000000000") {
 		return nil, fmt.Errorf("resolver not found for domain %s", domain)
@@ -50,24 +51,10 @@ func (r *RegistryService) RegisterDomain(hexPrivateKey string, domain string, re
 	}
 
 	// Register domain
-	tx, err := r.Registry.Register(auth, hashDomain(domain), common.HexToAddress(resolverAddress))
+	tx, err := r.Registry.Register(auth, registry.HashDomain(domain), common.HexToAddress(resolverAddress))
 	if err != nil {
 		return "", err
 	}
 
 	return tx.Hash().Hex(), nil
-}
-
-func hashDomain(input string) [32]byte {
-	hash := sha3.NewLegacyKeccak256()
-	_, _ = hash.Write([]byte(input))
-
-	// Get the resulting encoded byte slice
-	sha3 := hash.Sum(nil)
-
-	var sha32Bytes [32]byte
-	copy(sha32Bytes[:], sha3)
-
-	// Convert the encoded byte slice to a string
-	return sha32Bytes
 }

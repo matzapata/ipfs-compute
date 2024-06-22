@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha512"
+	"errors"
 	"fmt"
 	"log"
 
@@ -47,15 +48,11 @@ func EncryptBytes(publicKey *rsa.PublicKey, data []byte) ([]byte, error) {
 		nil)
 }
 
-func PrivateKeyToAddress(hexPrivateKey string) (common.Address, error) {
-	privateKey, err := crypto.HexToECDSA(hexPrivateKey)
-	if err != nil {
-		return common.Address{}, err
-	}
+func PrivateKeyToAddress(privateKey *ecdsa.PrivateKey) (common.Address, error) {
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		return common.Address{}, err
+		return common.Address{}, errors.New("error casting public key to ECDSA")
 	}
 
 	return crypto.PubkeyToAddress(*publicKeyECDSA), nil

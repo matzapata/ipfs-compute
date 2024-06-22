@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/cli/config"
-	"github.com/matzapata/ipfs-compute/cli/services"
+	"github.com/matzapata/ipfs-compute/shared/registry"
 )
 
 func ResolveCommand(rpc string, domain string) {
@@ -14,7 +14,7 @@ func ResolveCommand(rpc string, domain string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	registryService := registry.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
 
 	// resolve domain
 	resolver, err := registryService.ResolveDomain(domain)

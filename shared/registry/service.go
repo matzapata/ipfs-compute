@@ -1,13 +1,14 @@
-package services
+package registry
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/matzapata/ipfs-compute/shared/contracts"
-	registry "github.com/matzapata/ipfs-compute/shared/registry"
+	"github.com/matzapata/ipfs-compute/shared/eth"
 )
 
 type RegistryService struct {
@@ -15,9 +16,8 @@ type RegistryService struct {
 	Registry  *contracts.Registry
 }
 
-func NewRegistryService(client *ethclient.Client, registryAddress string) *RegistryService {
-	address := common.HexToAddress(registryAddress)
-	registry, err := contracts.NewRegistry(address, client)
+func NewRegistryService(client *ethclient.Client, registryAddress common.Address) *RegistryService {
+	registry, err := contracts.NewRegistry(registryAddress, client)
 	if err != nil {
 		panic(err)
 	}
@@ -31,11 +31,11 @@ func NewRegistryService(client *ethclient.Client, registryAddress string) *Regis
 // Resolve the domain to get the provider
 func (r *RegistryService) ResolveDomain(domain string) (*contracts.Resolver, error) {
 	// get resolver address and instantiate it
-	resolverAddress, err := r.Registry.Resolver(nil, registry.HashDomain(domain))
+	resolverAddress, err := r.Registry.Resolver(nil, HashDomain(domain))
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Resolver address for domain %s: %s\n", fmt.Sprintf("%x", registry.HashDomain(domain)), resolverAddress.Hex())
+	fmt.Printf("Resolver address for domain %s: %s\n", fmt.Sprintf("%x", HashDomain(domain)), resolverAddress.Hex())
 
 	if resolverAddress == common.HexToAddress("0x000000000000000000000000000000000000") {
 		return nil, fmt.Errorf("resolver not found for domain %s", domain)
@@ -44,14 +44,14 @@ func (r *RegistryService) ResolveDomain(domain string) (*contracts.Resolver, err
 	return contracts.NewResolver(resolverAddress, r.EthClient)
 }
 
-func (r *RegistryService) RegisterDomain(hexPrivateKey string, domain string, resolverAddress string) (string, error) {
-	auth, err := buildAuth(hexPrivateKey, r.EthClient)
+func (r *RegistryService) RegisterDomain(privateKey *ecdsa.PrivateKey, domain string, resolverAddress common.Address) (string, error) {
+	auth, err := eth.BuildAuth(privateKey, r.EthClient, nil)
 	if err != nil {
 		return "", err
 	}
 
 	// Register domain
-	tx, err := r.Registry.Register(auth, registry.HashDomain(domain), common.HexToAddress(resolverAddress))
+	tx, err := r.Registry.Register(auth, HashDomain(domain), resolverAddress)
 	if err != nil {
 		return "", err
 	}

@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/matzapata/ipfs-compute/server/helpers"
-	"github.com/matzapata/ipfs-compute/server/repositories"
+	"github.com/matzapata/ipfs-compute/provider/repositories"
+	utils "github.com/matzapata/ipfs-compute/provider/utils"
 )
 
 type DeploymentService struct {
@@ -42,13 +42,13 @@ func (d *DeploymentService) GetDeployment(cid string, dstDir string) error {
 
 	// write file
 	zipFilePath := filepath.Join(dstDir, "deployment.zip")
-	err = helpers.WriteFile(data, zipFilePath)
+	err = utils.WriteFile(data, zipFilePath)
 	if err != nil {
 		return err
 	}
 
 	// unzip
-	err = helpers.Unzip(zipFilePath, dstDir)
+	err = utils.Unzip(zipFilePath, dstDir)
 	if err != nil {
 		return err
 	}
@@ -64,11 +64,12 @@ func (d *DeploymentService) GetDeploymentMetadata(cid string) (*DeploymentMetada
 	}
 
 	// decrypt the JSON data
-	privateKey, err := helpers.LoadPrivateKeyFromString(os.Getenv("PRIVATE_KEY"))
+	// TODO: move out of here into shared
+	privateKey, err := utils.LoadPrivateKeyFromString(os.Getenv("PRIVATE_KEY"))
 	if err != nil {
 		return nil, fmt.Errorf("error loading private key: %v", err)
 	}
-	decDeploymentMetadataStr, err := helpers.DecryptBytes(privateKey, data)
+	decDeploymentMetadataStr, err := utils.DecryptBytes(privateKey, data)
 	if err != nil {
 		return nil, fmt.Errorf("error decrypting JSON data: %v", err)
 	}

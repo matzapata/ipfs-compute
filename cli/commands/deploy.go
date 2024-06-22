@@ -9,6 +9,7 @@ import (
 	"github.com/matzapata/ipfs-compute/cli/helpers"
 	"github.com/matzapata/ipfs-compute/cli/services"
 	"github.com/matzapata/ipfs-compute/shared/cryptoecdsa"
+	"github.com/matzapata/ipfs-compute/shared/registry"
 )
 
 func DeployCommand(privateKey string, provider string, pinataApiKey string, pinataSecret string, rpc string) {
@@ -18,7 +19,7 @@ func DeployCommand(privateKey string, provider string, pinataApiKey string, pina
 	}
 	deploymentService := services.NewDeploymentService()
 	ipfsService := services.NewIpfsService(pinataApiKey, pinataSecret)
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	registryService := registry.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
 
 	// confirm deployment
 	fmt.Println("IPFS Compute Deployment")

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/cli/config"
-	"github.com/matzapata/ipfs-compute/cli/services"
+	"github.com/matzapata/ipfs-compute/shared/registry"
 )
 
 // register a provider
@@ -18,10 +20,16 @@ func RegisterProvider(hexPrivateKey string, rpc string, domain string, resolverA
 	}
 
 	// create a new registry service
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	registryService := registry.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+
+	// recover the private key
+	privateKey, err := crypto.HexToECDSA(hexPrivateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// register the provider
-	tx, err := registryService.RegisterDomain(hexPrivateKey, domain, resolverAddress)
+	tx, err := registryService.RegisterDomain(privateKey, domain, common.HexToAddress(resolverAddress))
 	if err != nil {
 		log.Fatal(err)
 	}

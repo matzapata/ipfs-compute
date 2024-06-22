@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/cli/config"
-	"github.com/matzapata/ipfs-compute/cli/services"
+	"github.com/matzapata/ipfs-compute/shared/escrow"
+	"github.com/matzapata/ipfs-compute/shared/registry"
 )
 
 func AllowanceCommand(address string, providerDomain string, rpc string) {
@@ -14,8 +16,8 @@ func AllowanceCommand(address string, providerDomain string, rpc string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
-	escrowService := services.NewEscrowService(ethclient, config.ESCROW_ADDRESS, config.USDC_ADDRESS)
+	registryService := registry.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	escrowService := escrow.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 
 	// resolve domain
 	resolver, err := registryService.ResolveDomain(providerDomain)
@@ -28,7 +30,7 @@ func AllowanceCommand(address string, providerDomain string, rpc string) {
 	}
 
 	// get allowance
-	allowance, price, err := escrowService.Allowance(address, providerAddress.Hex())
+	allowance, price, err := escrowService.Allowance(common.HexToAddress(address), providerAddress)
 	if err != nil {
 		log.Fatal(err)
 	}

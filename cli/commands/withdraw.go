@@ -5,26 +5,32 @@ import (
 	"log"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/cli/config"
-	"github.com/matzapata/ipfs-compute/cli/services"
+	"github.com/matzapata/ipfs-compute/cli/helpers"
 	"github.com/matzapata/ipfs-compute/shared/cryptoecdsa"
+	"github.com/matzapata/ipfs-compute/shared/escrow"
 )
 
 // Withdraw funds from the escrow account
-func WithdrawCommand(privateKey string, amount uint, rpc string) {
+func WithdrawCommand(hexPrivateKey string, amount uint, rpc string) {
 	ethclient, err := ethclient.Dial(rpc)
 	if err != nil {
 		log.Fatal(err)
 	}
-	escrowService := services.NewEscrowService(ethclient, config.ESCROW_ADDRESS, config.USDC_ADDRESS)
+	escrowService := escrow.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 
 	// confirm with the user
-	fmt.Printf("You are about to withdraw %d USDC from the escrow account. Continue? (y/n): ", amount)
-	var confirm string
-	fmt.Scanln(&confirm)
-	if confirm != "y" {
+	prompt := fmt.Sprintf("You are about to withdraw %d USDC from the escrow account. Continue? (y/n): ", amount)
+	if !helpers.Confirm(prompt) {
 		return
+	}
+
+	// recover private key
+	privateKey, err := crypto.HexToECDSA(hexPrivateKey)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Check balance

@@ -4,6 +4,16 @@ Imagine AWS lambdas for IPFS compute, host your code in IPFS and make it worldwi
 
 Why khachapuri? It's just mindbogglingly delicious and palta was already taken.
 
+## Structure
+
+- `cli` -> Create deployments and interact with contracts, allow providers, register providers, check balances, deposit in escrow
+- `contracts` -> Contracts for escrow contract and registry
+- `provider` -> Provider server, process requests
+- `gateway` -> Reverse proxy / localtunnel
+- `shared` -> Go shared resources
+    - Contracts
+    - ECDSA and RSA utilities
+    - Registry domain hashing
 
 ## Design
 

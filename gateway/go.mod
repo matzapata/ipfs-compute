@@ -1,12 +1,10 @@
-module github.com/matzapata/ipfs-compute/server
+module github.com/matzapata/ipfs-compute/gateway
 
 go 1.22.0
 
 replace github.com/matzapata/ipfs-compute/shared => ../shared
 
 require (
-	github.com/ethereum/go-ethereum v1.14.5
-	github.com/go-chi/chi v1.5.5
 	github.com/joho/godotenv v1.5.1
 	github.com/matzapata/ipfs-compute/shared v0.0.0-00010101000000-000000000000
 )
@@ -22,6 +20,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
+	github.com/ethereum/go-ethereum v1.14.5 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect

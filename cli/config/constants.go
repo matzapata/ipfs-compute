@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/matzapata/ipfs-compute/cli/helpers"
 )
 
@@ -18,6 +19,6 @@ var (
 
 const TERMS_AND_CONDITIONS = "Deploy to IPFS Compute. Code will be runnable by everyone with the CID."
 
-const REGISTRY_ADDRESS = "0xdb42A86B1bfe04E75B2A5F2bF7a3BBB52D7FFD2F"
-const ESCROW_ADDRESS = "0x"
-const USDC_ADDRESS = "0x"
+var REGISTRY_ADDRESS = common.HexToAddress("0xdb42A86B1bfe04E75B2A5F2bF7a3BBB52D7FFD2F")
+var ESCROW_ADDRESS = common.HexToAddress("0x")
+var USDC_ADDRESS = common.HexToAddress("0x")

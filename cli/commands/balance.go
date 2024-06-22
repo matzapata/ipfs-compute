@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/cli/config"
-	"github.com/matzapata/ipfs-compute/cli/services"
+	"github.com/matzapata/ipfs-compute/shared/escrow"
 )
 
 func BalanceCommand(address string, rpc string) {
@@ -13,7 +13,7 @@ func BalanceCommand(address string, rpc string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	escrowService := services.NewEscrowService(ethclient, config.ESCROW_ADDRESS, config.USDC_ADDRESS)
+	escrowService := escrow.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 
 	// get balance
 	balance, err := escrowService.Balance(address)

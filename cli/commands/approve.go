@@ -4,18 +4,21 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/cli/config"
-	"github.com/matzapata/ipfs-compute/cli/services"
+	"github.com/matzapata/ipfs-compute/cli/helpers"
+	"github.com/matzapata/ipfs-compute/shared/escrow"
+	"github.com/matzapata/ipfs-compute/shared/registry"
 )
 
-func ApproveCommand(privateKey string, rpc string, amount uint, price uint, providerDomain string) {
+func ApproveCommand(hexPrivateKey string, rpc string, amount uint, price uint, providerDomain string) {
 	ethclient, err := ethclient.Dial(rpc)
 	if err != nil {
 		log.Fatal(err)
 	}
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
-	escrowService := services.NewEscrowService(ethclient, config.ESCROW_ADDRESS, config.USDC_ADDRESS)
+	registryService := registry.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	escrowService := escrow.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 
 	// resolve domain
 	resolver, err := registryService.ResolveDomain(providerDomain)
@@ -28,11 +31,15 @@ func ApproveCommand(privateKey string, rpc string, amount uint, price uint, prov
 	}
 
 	// confirm with the user
-	fmt.Printf("You are about to approve provider %s to spend %d USDC at %d per request. Continue? (y/n): ", providerDomain, amount, price)
-	var confirm string
-	fmt.Scanln(&confirm)
-	if confirm != "y" {
+	prompt := fmt.Sprintf("You are about to approve provider %s to spend %d USDC at %d per request. Continue? (y/n): ", providerDomain, amount, price)
+	if !helpers.Confirm(prompt) {
 		return
+	}
+
+	// recover private key
+	privateKey, err := crypto.HexToECDSA(hexPrivateKey)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Approve escrow contract to spend USDC

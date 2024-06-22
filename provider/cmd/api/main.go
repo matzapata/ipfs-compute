@@ -6,14 +6,16 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
-	"github.com/matzapata/ipfs-compute/server/config"
-	"github.com/matzapata/ipfs-compute/server/controllers"
-	"github.com/matzapata/ipfs-compute/server/repositories"
-	ipfsRepositories "github.com/matzapata/ipfs-compute/server/repositories/ipfs"
-	services "github.com/matzapata/ipfs-compute/server/services"
+	"github.com/matzapata/ipfs-compute/provider/config"
+	"github.com/matzapata/ipfs-compute/provider/controllers"
+	"github.com/matzapata/ipfs-compute/provider/repositories"
+	ipfsRepositories "github.com/matzapata/ipfs-compute/provider/repositories/ipfs"
+	services "github.com/matzapata/ipfs-compute/provider/services"
+	"github.com/matzapata/ipfs-compute/shared/escrow"
 )
 
 func main() {
@@ -27,6 +29,12 @@ func main() {
 	UNIT_PRICE.SetString(os.Getenv("UNIT_PRICE"), 10)
 	PROVIDER_ECDSA_PRIVATE_KEY := os.Getenv("PROVIDER_ECDSA_PRIVATE_KEY")
 
+	// load private key
+	providerEcdsaPrivateKey, err := crypto.HexToECDSA(PROVIDER_ECDSA_PRIVATE_KEY)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// eth client
 	client, err := ethclient.Dial(RPC_URL)
 	if err != nil {
@@ -39,7 +47,7 @@ func main() {
 	// services
 	computeService := services.NewComputeService()
 	deploymentService := services.NewDeploymentService(&deploymentRepository)
-	escrowService := services.NewEscrowService(client, config.ESCROW_ADDRESS)
+	escrowService := escrow.NewEscrowService(client, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 
 	// controllers
 	computeController := controllers.NewComputeHttpController(
@@ -47,7 +55,7 @@ func main() {
 		deploymentService,
 		escrowService,
 		UNIT_PRICE,
-		PROVIDER_ECDSA_PRIVATE_KEY,
+		providerEcdsaPrivateKey,
 	)
 
 	// router

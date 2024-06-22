@@ -1,4 +1,4 @@
-BINARY_NAME=khachapuri
+BINARY_NAME=khachapuri-provider
 GOOS=linux
 GOARCH=amd64
 
@@ -10,12 +10,7 @@ endif
 
 # build the binary
 build:
-	go build -o ./build/$(BINARY_NAME) cmd/main.go
-
-# add to /usr/local/bin to make it available in the terminal
-install: build
-	mv ./build/$(BINARY_NAME) /usr/local/bin
-
+	go build -o ./build/$(BINARY_NAME) cmd/api/main.go
 
 # clean build files
 clean:
@@ -28,7 +23,7 @@ deps:
 
 # build and run the binary
 run: 
-	go run cmd/main.go
+	go run cmd/api/main.go
 
 # help target to display available targets
 help:

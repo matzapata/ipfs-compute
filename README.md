@@ -98,18 +98,60 @@ sequenceDiagram
     IPFS->>-User: deploymentCid
 ```
 
-### Reverse proxy
+### Gateway
 
+We want to:
+- Create an easy entry point for the 
+
+#### Reverse proxy
 
 {provider}.khachapuri.xyz:  
 
 Resolves {provider} and acts a universal entry safe point to providers
 
+```mermaid
+sequenceDiagram
+    participant User as Requestor
+    participant LTServer as Gateway
+    participant Registry as ProvidersRegistry
+    participant ProviderServer
 
-## TODOS
 
+    User->>+LTServer: Access https://{provider_domain}.khachapuri.xyz/{cid}
+    LTServer->>+Registry: Resolve {provider_domain}
+    Registry->>-LTServer: target
+    LTServer->>+LTClient: Forward request via WebSocket
+    LTClient->>+LocalServer: Forward request to local server
+    LocalServer->>+LTClient: Send response back to LTClient
+    LTClient->>+LTServer: Forward response via WebSocket
+    LTServer->>+User: Send response back to user
+```
+
+#### Local tunneling
+
+To allow everybody to provide compute to the network we would host a tunneling service like localtunnel withing the gateway. 
+
+```mermaid
+sequenceDiagram
+    participant User as Requestor
+    participant LTServer as Gateway
+    participant Registry as ProvidersRegistry
+    participant LTClient as Gateway Client
+    participant LocalServer as Provider Server localhost:3000
+
+    User->>+LTServer: Access https://{provider_domain}.khachapuri.xyz/{cid}
+    LTServer->>+Registry: Resolve {provider_domain}
+    Registry->>-LTServer: target
+    LTServer->>+LTClient: Forward request via WebSocket
+    LTClient->>+LocalServer: Forward request to local server
+    LocalServer->>+LTClient: Send response back to LTClient
+    LTClient->>+LTServer: Forward response via WebSocket
+    LTServer->>+User: Send response back to user
+```
+
+
+## TODO
 
 TODO: Timeout docker running 15 secs or so
-TODO: Pass method, headers and so on as args. Also allow more control on communication between processes so it works like a full server (curl interface, make curl command from current request)
 TODO: Allow unencrypted deployments, anybody can run. Cool also if there can be more than one runner
 TODO: Create library for hashing domains (https://github.com/Arachnid/eth-ens-namehash/blob/master/index.js) maybe even assign all to owner and owner manages it (https://github.com/ensdomains/ens-contracts/blob/8e8cf71bc50fb1a5055dcf3d523d2ed54e725d28/contracts/registry/ENSRegistry.sol#L29)

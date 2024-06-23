@@ -108,8 +108,15 @@ func (c *ComputeHttpController) Compute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// parse request into execution params
+	args, err := c.ComputeService.ParseRequest(r)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
 	// execute binary and give response
-	resultJSON, err := c.ComputeService.Compute(tempDir, depl.Env)
+	resultJSON, err := c.ComputeService.Compute(tempDir, depl.Env, args)
 	if err != nil {
 		utils.ErrorJSON(w, err, 400)
 		return

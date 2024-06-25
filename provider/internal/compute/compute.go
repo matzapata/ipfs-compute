@@ -3,25 +3,24 @@ package compute
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
-	"os"
 	"os/exec"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/matzapata/ipfs-compute/provider/internal/deployment"
+	"github.com/matzapata/ipfs-compute/provider/internal/artifact"
 	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
 )
 
 type ComputeService struct {
-	DeploymentService       *deployment.DeploymentService
+	ArtifactService         *artifact.ArtifactService
 	EscrowService           *escrow.EscrowService
-	ProviderEcdsaAddress    *common.Address
 	ProviderEcdsaPrivateKey *ecdsa.PrivateKey
+	ProviderEcdsaAddress    *common.Address
+	ProviderRsaPrivateKey   *rsa.PrivateKey
 	PriceUnit               *big.Int
 }
 
@@ -36,78 +35,75 @@ type ComputeContext struct {
 }
 
 func NewComputeService(
-	deploymentService *deployment.DeploymentService,
+	// Services
+	artifactService *artifact.ArtifactService,
 	escrowService *escrow.EscrowService,
-	providerEcdsaAddress *common.Address,
+
+	// Config
 	providerEcdsaPrivateKey *ecdsa.PrivateKey,
+	providerEcdsaAddress *common.Address,
+	providerRsaPrivateKey *rsa.PrivateKey,
 	priceUnit *big.Int,
 ) *ComputeService {
 	return &ComputeService{
-		DeploymentService:    deploymentService,
-		EscrowService:        escrowService,
-		ProviderEcdsaAddress: providerEcdsaAddress,
-		PriceUnit:            priceUnit,
+		ArtifactService:         artifactService,
+		EscrowService:           escrowService,
+		ProviderRsaPrivateKey:   providerRsaPrivateKey,
+		ProviderEcdsaAddress:    providerEcdsaAddress,
+		ProviderEcdsaPrivateKey: providerEcdsaPrivateKey,
+		PriceUnit:               priceUnit,
 	}
 }
 
-func (c *ComputeService) Compute(cid string, payerHeader string, computeArgs string) (*ComputeResponse, *ComputeContext, error) {
-	// Get deployment specifications
-	depl, err := c.DeploymentService.GetDeploymentMetadata(cid)
+func (c *ComputeService) Compute(cid string, payerHeader string, computeArgs string) (res *ComputeResponse, ctx *ComputeContext, err error) {
+	artifact, err := c.ArtifactService.GetArtifactSpecification(cid, c.ProviderRsaPrivateKey)
 	if err != nil {
-		return nil, nil, err
+		return
 	}
 
-	// TODO: Extract payer from header or deployment to owner
+	// extract payer from header or deployment to owner
 	var payerAddress common.Address
 	if payerHeader != "" {
 		// TODO: extract signer from signature and verify it (Signature has expiration time)
 		panic("Not implemented")
 	} else {
-		payerAddress = common.HexToAddress(depl.Owner)
+		payerAddress = common.HexToAddress(artifact.Owner)
 	}
 
 	// check if deployment can be paid and other prechecks before executing the binary
 	allowance, price, err := c.EscrowService.Allowance(payerAddress, *c.ProviderEcdsaAddress)
 	if err != nil {
-		return nil, nil, err
+		return
 	}
 	if allowance.Cmp(price) < 0 {
-		return nil, nil, errors.New("insufficient funds")
+		err = errors.New("insufficient funds")
+		return
 	}
 	if price.Cmp(c.PriceUnit) > 0 {
-		return nil, nil, errors.New("invalid price")
+		err = errors.New("invalid price")
+		return
 	}
 
-	// temp folder creation.
-	tempDir, err := os.MkdirTemp("", "khachapuri-*")
+	// get deployment executable
+	executableDir, err := c.ArtifactService.GetArtifactExecutable(artifact.DeploymentCid)
 	if err != nil {
-		return nil, nil, err
-	}
-	defer os.RemoveAll(tempDir)
-
-	// download deployment
-	err = c.DeploymentService.GetDeployment(depl.DeploymentCid, tempDir)
-	if err != nil {
-		return nil, nil, err
+		return
 	}
 
 	// reduce user balance in escrow contract.
 	tx, err := c.EscrowService.Consume(c.ProviderEcdsaPrivateKey, payerAddress, c.PriceUnit)
 	if err != nil {
-		return nil, nil, err
+		return
 	}
 
 	// execute binary and give response
-	resultJSON, err := c.ExecuteProgram(tempDir, depl.Env, computeArgs)
+	res, err = c.ExecuteProgram(executableDir, artifact.Env, computeArgs)
 	if err != nil {
-		return nil, nil, err
+		return
 	}
+	ctx = &ComputeContext{EscrowTransaction: tx}
 
-	context := &ComputeContext{
-		EscrowTransaction: tx,
-	}
-
-	return resultJSON, context, nil
+	return res, ctx, nil
 
 }
 
@@ -122,7 +118,6 @@ func (cs *ComputeService) ExecuteProgram(deploymentPath string, execEnv []string
 
 	// run the binary inside the docker container
 	cmd := exec.Command("docker", args...)
-
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
@@ -140,33 +135,4 @@ func (cs *ComputeService) ExecuteProgram(deploymentPath string, execEnv []string
 	}
 
 	return &response, nil
-}
-
-// Creates curl like command to be executed in the gateway
-func (cs *ComputeService) ParseRequest(r *http.Request) (string, error) {
-	// Prepare the curl command
-	args := []string{"-X", r.Method}
-
-	// add headers
-	for key, value := range r.Header {
-		args = append(args, "-H", fmt.Sprintf("%s: %s", key, value[0]))
-	}
-	args = append(args, r.URL.String())
-
-	// add data
-	if r.Method == "POST" || r.Method == "PUT" {
-		body, err := r.GetBody()
-		if err != nil {
-			return "", fmt.Errorf("failed to get body: %v", err)
-		}
-		data, err := io.ReadAll(body)
-		if err != nil {
-			return "", fmt.Errorf("failed to read body: %v", err)
-		}
-		args = append(args, "-d", string(data))
-	}
-
-	// TODO: add more methods
-
-	return fmt.Sprintf("%s", args), nil
 }

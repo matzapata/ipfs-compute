@@ -57,3 +57,7 @@ func PrivateKeyToAddress(privateKey *ecdsa.PrivateKey) (common.Address, error) {
 
 	return crypto.PubkeyToAddress(*publicKeyECDSA), nil
 }
+
+func HexToPrivateKey(hexkey string) (*ecdsa.PrivateKey, error) {
+	return crypto.HexToECDSA(hexkey)
+}

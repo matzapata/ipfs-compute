@@ -1,4 +1,4 @@
-package deployment_test
+package artifact_test
 
 import (
 	"testing"
@@ -6,6 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeploymentService(t *testing.T) {
+func TestArtifactBuilder(t *testing.T) {
 	assert.True(t, true)
 }

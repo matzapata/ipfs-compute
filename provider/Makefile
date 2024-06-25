@@ -1,4 +1,5 @@
-BINARY_NAME=main
+API_BINARY_NAME=api
+CLI_BINARY_NAME=api
 GOOS=linux
 GOARCH=amd64
 
@@ -8,32 +9,24 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-# build the binary
-build:
-	go build -o ./build/$(BINARY_NAME) cmd/api/main.go
+run-api: 
+	go run cmd/api/main.go
 
-# clean build files
+run-cli:
+	go run cmd/cli/main.go
+
+build-api:
+	go build -o ./build/$(API_BINARY_NAME) cmd/api/main.go
+
+build-cli:
+	go build -o ./build/$(CLI_BINARY_NAME) cmd/cli/main.go
+
 clean:
 	go clean
 	rm -fr build
 
-# install dependencies
 deps:
 	go get -v
-
-# build and run the binary
-run: 
-	go run cmd/api/main.go
-
-# help target to display available targets
-help:
-	@echo "Available targets:"
-	@echo "  make          - Build the binary (default target)"
-	@echo "  make build    - Build the binary"
-	@echo "  make clean    - Remove the binary and other generated files"
-	@echo "  make deps     - Install dependencies"
-	@echo "  make run      - Run cmd/main.go"
-	@echo "  make help     - Display this help message"
 
 .PHONY: build clean deps run help
 

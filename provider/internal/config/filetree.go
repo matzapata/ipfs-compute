@@ -6,8 +6,6 @@ import (
 
 var (
 	SRC_SPEC_FILE       = files_helpers.BuildCwdPath("deployment.json")
-	SRC_BIN_FILE        = files_helpers.BuildCwdPath("main")
-	SRC_PUBLIC_DIR      = files_helpers.BuildCwdPath("public")
 	DIST_DIR            = files_helpers.BuildCwdPath("dist")
 	DIST_SPEC_FILE      = files_helpers.BuildCwdPath("dist/deployment.json")
 	DIST_BIN_FILE       = files_helpers.BuildCwdPath("dist/deployment/main")

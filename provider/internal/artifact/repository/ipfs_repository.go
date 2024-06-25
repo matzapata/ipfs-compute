@@ -1,4 +1,4 @@
-package deployment_repository
+package artifact_repository
 
 import (
 	"bytes"
@@ -9,21 +9,58 @@ import (
 	"strconv"
 )
 
-type IpfsDeploymentsRepository struct {
+// TODO: Return file paths instead of bytes
+
+type IpfsArtifactRepository struct {
 }
 
-func NewIpfsDeploymentsRepository() *IpfsDeploymentsRepository {
-	return &IpfsDeploymentsRepository{}
+func NewIpfsArtifactRepository() *IpfsArtifactRepository {
+	return &IpfsArtifactRepository{}
 }
 
-func (dr *IpfsDeploymentsRepository) GetZippedDeployment(cid string, maxSize uint) ([]byte, error) {
-	return downloadFile(cid, int64(maxSize))
+func (dr *IpfsArtifactRepository) GetZippedExecutable(cid string, maxSize uint) (zipPath string, err error) {
+	data, err := downloadFile(cid, int64(maxSize))
+	if err != nil {
+		return
+	}
+
+	zipTempPath, err := os.CreateTemp("", "zipped-executable-*")
+	if err != nil {
+		return
+	}
+	_, err = zipTempPath.Write(data)
+	if err != nil {
+		return
+	}
+
+	return zipTempPath.Name(), nil
 }
 
-func (dt *IpfsDeploymentsRepository) GetDeploymentSpecFile(cid string) ([]byte, error) {
+func (dt *IpfsArtifactRepository) GetSpecificationFile(cid string) (specPath string, err error) {
 	const maxSize = 1 << 20 // 1 MB
 
-	return downloadFile(cid, maxSize)
+	data, err := downloadFile(cid, maxSize)
+	if err != nil {
+		return
+	}
+
+	specTempPath, err := os.CreateTemp("", "specification-*")
+	if err != nil {
+		return
+	}
+	_, err = specTempPath.Write(data)
+	if err != nil {
+		return
+	}
+
+	return specTempPath.Name(), nil
+}
+
+func (dt *IpfsArtifactRepository) CreateZippedExecutable(zipPath string) (cid string, err error) {
+	panic("not implemented") // TODO: Implement. Pin to IPFS and return CID
+}
+func (dt *IpfsArtifactRepository) CreateSpecificationFile(specPath string) (cid string, err error) {
+	panic("not implemented") // TODO: Implement
 }
 
 func downloadFile(cid string, maxSize int64) ([]byte, error) {

@@ -32,6 +32,9 @@ func (a *ApiHandler) Handle() {
 	PROVIDER_ECDSA_PRIVATE_KEY := os.Getenv("PROVIDER_ECDSA_PRIVATE_KEY")
 	PROVIDER_RSA_PRIVATE_KEY := os.Getenv("PROVIDER_RSA_PRIVATE_KEY")
 	PROVIDER_UNIT_PRICE := os.Getenv("PROVIDER_UNIT_PRICE")
+	IPFS_PINATA_APIKEY := os.Getenv("IPFS_PINATA_APIKEY")
+	IPFS_PINATA_SECRET := os.Getenv("IPFS_PINATA_SECRET")
+	IPFS_PINATA_ENDPOINT := os.Getenv("IPFS_PINATA_ENDPOINT")
 
 	// constants
 	providerEcdsaPrivateKey, err := ecdsa_helpers.HexToPrivateKey(PROVIDER_ECDSA_PRIVATE_KEY)
@@ -53,7 +56,7 @@ func (a *ApiHandler) Handle() {
 	providerUnitPrice, _ := big.NewInt(0).SetString(PROVIDER_UNIT_PRICE, 10)
 
 	// instantiate repositories
-	artifactRepository := artifact_repository.NewIpfsArtifactRepository()
+	artifactRepository := artifact_repository.NewIpfsArtifactRepository(IPFS_PINATA_ENDPOINT, IPFS_PINATA_APIKEY, IPFS_PINATA_SECRET)
 
 	// instantiate services
 	artifactsService := artifact.NewArtifactService(artifactRepository)

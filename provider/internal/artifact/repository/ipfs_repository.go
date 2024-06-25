@@ -7,19 +7,24 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/wabarc/ipfs-pinner/pkg/pinata"
 )
 
-// TODO: Return file paths instead of bytes
-
 type IpfsArtifactRepository struct {
+	Gateway string
+	Pinata  pinata.Pinata
 }
 
-func NewIpfsArtifactRepository() *IpfsArtifactRepository {
-	return &IpfsArtifactRepository{}
+func NewIpfsArtifactRepository(gateway string, pinataApiKey string, pinataSecret string) *IpfsArtifactRepository {
+	return &IpfsArtifactRepository{
+		Gateway: gateway,
+		Pinata:  pinata.Pinata{Apikey: pinataApiKey, Secret: pinataSecret},
+	}
 }
 
-func (dr *IpfsArtifactRepository) GetZippedExecutable(cid string, maxSize uint) (zipPath string, err error) {
-	data, err := downloadFile(cid, int64(maxSize))
+func (dt *IpfsArtifactRepository) GetZippedExecutable(cid string, maxSize uint) (zipPath string, err error) {
+	data, err := downloadFile(dt.Gateway, cid, int64(maxSize))
 	if err != nil {
 		return
 	}
@@ -39,12 +44,12 @@ func (dr *IpfsArtifactRepository) GetZippedExecutable(cid string, maxSize uint) 
 func (dt *IpfsArtifactRepository) GetSpecificationFile(cid string) (specPath string, err error) {
 	const maxSize = 1 << 20 // 1 MB
 
-	data, err := downloadFile(cid, maxSize)
+	data, err := downloadFile(dt.Gateway, cid, maxSize)
 	if err != nil {
 		return
 	}
 
-	specTempPath, err := os.CreateTemp("", "specification-*")
+	specTempPath, err := os.CreateTemp("", "*")
 	if err != nil {
 		return
 	}
@@ -57,14 +62,15 @@ func (dt *IpfsArtifactRepository) GetSpecificationFile(cid string) (specPath str
 }
 
 func (dt *IpfsArtifactRepository) CreateZippedExecutable(zipPath string) (cid string, err error) {
-	panic("not implemented") // TODO: Implement. Pin to IPFS and return CID
-}
-func (dt *IpfsArtifactRepository) CreateSpecificationFile(specPath string) (cid string, err error) {
-	panic("not implemented") // TODO: Implement
+	return dt.Pinata.PinFile(zipPath)
 }
 
-func downloadFile(cid string, maxSize int64) ([]byte, error) {
-	url := fmt.Sprintf("%v/ipfs/%s", os.Getenv("IPFS_GATEWAY"), cid)
+func (dt *IpfsArtifactRepository) CreateSpecificationFile(specPath string) (cid string, err error) {
+	return dt.Pinata.PinFile(specPath)
+}
+
+func downloadFile(gateway string, cid string, maxSize int64) ([]byte, error) {
+	url := fmt.Sprintf("%v/ipfs/%s", gateway, cid)
 
 	// first, check the file size is within the limit
 	size, err := getFileSize(url)

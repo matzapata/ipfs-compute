@@ -26,7 +26,6 @@ func NewArtifactBuilderService(sourceService *source.SourceService, artifactRepo
 	}
 }
 
-// TODO: these 2 should write to ipfs repo and read from source service
 func (as *ArtifactBuilderService) BuildDeploymentZip() (cid string, err error) {
 	// make dist folder
 	err = os.Mkdir(config.DIST_DIR, 0755)

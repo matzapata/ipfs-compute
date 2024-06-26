@@ -1,4 +1,4 @@
-package artifact_repository
+package repositories
 
 import (
 	"bytes"

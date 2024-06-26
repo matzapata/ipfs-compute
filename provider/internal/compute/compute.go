@@ -15,6 +15,11 @@ import (
 	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
 )
 
+type IComputeService interface {
+	Compute(cid string, payerHeader string, computeArgs string) (res *ComputeResponse, ctx *ComputeContext, err error)
+	ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*ComputeResponse, error)
+}
+
 type ComputeService struct {
 	ArtifactService         *artifact.ArtifactService
 	EscrowService           *escrow.EscrowService
@@ -107,7 +112,7 @@ func (c *ComputeService) Compute(cid string, payerHeader string, computeArgs str
 
 }
 
-func (cs *ComputeService) ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*ComputeResponse, error) {
+func (c *ComputeService) ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*ComputeResponse, error) {
 	// Prepare the docker run command
 	args := []string{"run", "--rm", "-v", fmt.Sprintf("%s:/app", deploymentPath)}
 	for _, env := range execEnv {

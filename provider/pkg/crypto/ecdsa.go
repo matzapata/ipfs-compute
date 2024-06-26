@@ -1,10 +1,7 @@
-package ecdsa_helpers
+package crypto_service
 
 import (
 	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha512"
 	"errors"
 	"fmt"
 	"log"
@@ -20,7 +17,14 @@ type Signature struct {
 	Address   string `json:"address"`
 }
 
-func SignMessage(data []byte, hexkey string) (*Signature, error) {
+type CryptoEcdsaService struct {
+}
+
+func NewCryptoEcdsaService() *CryptoEcdsaService {
+	return &CryptoEcdsaService{}
+}
+
+func (*CryptoEcdsaService) SignMessage(data []byte, hexkey string) (*Signature, error) {
 	privateKey, err := crypto.HexToECDSA(hexkey)
 	if err != nil {
 		log.Fatal(err)
@@ -39,16 +43,11 @@ func SignMessage(data []byte, hexkey string) (*Signature, error) {
 	}, nil
 }
 
-func EncryptBytes(publicKey *rsa.PublicKey, data []byte) ([]byte, error) {
-	return rsa.EncryptOAEP(
-		sha512.New(),
-		rand.Reader,
-		publicKey,
-		data,
-		nil)
+func (*CryptoEcdsaService) LoadPrivateKeyFromString(hexkey string) (*ecdsa.PrivateKey, error) {
+	return crypto.HexToECDSA(hexkey)
 }
 
-func PrivateKeyToAddress(privateKey *ecdsa.PrivateKey) (common.Address, error) {
+func (*CryptoEcdsaService) PrivateKeyToAddress(privateKey *ecdsa.PrivateKey) (common.Address, error) {
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
@@ -56,8 +55,4 @@ func PrivateKeyToAddress(privateKey *ecdsa.PrivateKey) (common.Address, error) {
 	}
 
 	return crypto.PubkeyToAddress(*publicKeyECDSA), nil
-}
-
-func HexToPrivateKey(hexkey string) (*ecdsa.PrivateKey, error) {
-	return crypto.HexToECDSA(hexkey)
 }

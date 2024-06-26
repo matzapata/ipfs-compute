@@ -5,12 +5,11 @@ import (
 	"log"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
+	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
 	console_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/console"
-	ecdsa_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/ecdsa"
 )
 
 // Withdraw funds from the escrow account
@@ -20,6 +19,7 @@ func WithdrawCommand(hexPrivateKey string, amount uint, rpc string) {
 		log.Fatal(err)
 	}
 	escrowService := escrow.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+	cryptoEcdsaService := crypto_service.NewCryptoEcdsaService()
 
 	// confirm with the user
 	prompt := fmt.Sprintf("You are about to withdraw %d USDC from the escrow account. Continue? (y/n): ", amount)
@@ -28,13 +28,13 @@ func WithdrawCommand(hexPrivateKey string, amount uint, rpc string) {
 	}
 
 	// recover private key
-	privateKey, err := crypto.HexToECDSA(hexPrivateKey)
+	privateKey, err := cryptoEcdsaService.LoadPrivateKeyFromString(hexPrivateKey)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Check balance
-	address, err := ecdsa_helpers.PrivateKeyToAddress(privateKey)
+	address, err := cryptoEcdsaService.PrivateKeyToAddress(privateKey)
 	if err != nil {
 		log.Fatal(err)
 	}

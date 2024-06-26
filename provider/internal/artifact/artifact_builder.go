@@ -5,24 +5,33 @@ import (
 	"encoding/json"
 	"os"
 
-	artifact_repository "github.com/matzapata/ipfs-compute/provider/internal/artifact/repository"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
+	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
 	"github.com/matzapata/ipfs-compute/provider/internal/source"
-	ecdsa_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/ecdsa"
-	files_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/files"
-	rsa_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/rsa"
+
+	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
+	zip_service "github.com/matzapata/ipfs-compute/provider/pkg/zip"
 	cp "github.com/otiai10/copy"
 )
 
 type ArtifactBuilderService struct {
-	SourceService *source.SourceService
-	ArtifactRepo  artifact_repository.ArtifactRepository
+	SourceService    *source.SourceService
+	ArtifactRepo     repositories.ArtifactRepository
+	CryptoRsaService *crypto_service.CryptoRsaService
+	ZipService       *zip_service.ZipService
 }
 
-func NewArtifactBuilderService(sourceService *source.SourceService, artifactRepository artifact_repository.ArtifactRepository) *ArtifactBuilderService {
+func NewArtifactBuilderService(
+	sourceService *source.SourceService,
+	artifactRepository repositories.ArtifactRepository,
+	cryptoRsaService *crypto_service.CryptoRsaService,
+	zipService *zip_service.ZipService,
+) *ArtifactBuilderService {
 	return &ArtifactBuilderService{
-		SourceService: sourceService,
-		ArtifactRepo:  artifactRepository,
+		SourceService:    sourceService,
+		ArtifactRepo:     artifactRepository,
+		CryptoRsaService: cryptoRsaService,
+		ZipService:       zipService,
 	}
 }
 
@@ -55,7 +64,7 @@ func (as *ArtifactBuilderService) BuildDeploymentZip() (cid string, err error) {
 	}
 
 	// zip dist folder
-	err = files_helpers.ZipFolder(config.DIST_DEPLOYMENT_DIR, config.DIST_ZIP_FILE)
+	err = as.ZipService.ZipFolder(config.DIST_DEPLOYMENT_DIR, config.DIST_ZIP_FILE)
 	if err != nil {
 		return
 	}
@@ -69,34 +78,23 @@ func (as *ArtifactBuilderService) BuildDeploymentZip() (cid string, err error) {
 	return cid, nil
 }
 
-func (as *ArtifactBuilderService) BuildDeploymentSpecification(executableCid string, signature *ecdsa_helpers.Signature, providerPublicKey *rsa.PublicKey) (cid string, err error) {
-	// get deployment spec
-	source, err := as.SourceService.GetSource()
-	if err != nil {
-		return
-	}
-
-	deploymentSpecJson, err := os.ReadFile(source.SpecPath)
-	if err != nil {
-		return
-	}
-	var deploymentSpec ArtifactSpecification
-	err = json.Unmarshal(deploymentSpecJson, &deploymentSpec)
+func (as *ArtifactBuilderService) BuildDeploymentSpecification(executableCid string, signature *crypto_service.Signature, providerPublicKey *rsa.PublicKey) (cid string, err error) {
+	sourceSpec, err := as.SourceService.GetSourceSpecification()
 	if err != nil {
 		return
 	}
 
 	// encrypt it with public key
 	deploymentJson, err := json.Marshal(Artifact{
-		ArtifactSpecification: deploymentSpec,
-		Owner:                 signature.Address,
-		OwnerSignature:        signature.Signature,
-		DeploymentCid:         executableCid,
+		Env:            sourceSpec.Env,
+		Owner:          signature.Address,
+		OwnerSignature: signature.Signature,
+		DeploymentCid:  executableCid,
 	})
 	if err != nil {
 		return
 	}
-	encDeploymentJson, err := rsa_helpers.EncryptBytes(providerPublicKey, deploymentJson)
+	encDeploymentJson, err := as.CryptoRsaService.EncryptBytes(providerPublicKey, deploymentJson)
 	if err != nil {
 		return
 	}

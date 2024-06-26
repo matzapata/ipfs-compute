@@ -1,4 +1,4 @@
-package source_repository
+package repositories
 
 type Source struct {
 	ExecutablePath string
@@ -6,6 +6,11 @@ type Source struct {
 	SpecPath       string
 }
 
+type SourceSpecification struct {
+	Env []string `json:"env"`
+}
+
 type SourceRepository interface {
 	GetSource() (*Source, error)
+	GetSourceSpecification() (*SourceSpecification, error)
 }

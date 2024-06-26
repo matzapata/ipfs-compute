@@ -10,13 +10,13 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
 	"github.com/matzapata/ipfs-compute/provider/internal/artifact"
-	artifact_repository "github.com/matzapata/ipfs-compute/provider/internal/artifact/repository"
 	"github.com/matzapata/ipfs-compute/provider/internal/compute"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	api_routers "github.com/matzapata/ipfs-compute/provider/internal/controllers/api/routers"
+	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
+	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
-	ecdsa_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/ecdsa"
-	rsa_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/rsa"
+	zip_service "github.com/matzapata/ipfs-compute/provider/pkg/zip"
 )
 
 type ApiHandler struct {
@@ -36,16 +36,21 @@ func (a *ApiHandler) Handle() {
 	IPFS_PINATA_SECRET := os.Getenv("IPFS_PINATA_SECRET")
 	IPFS_PINATA_ENDPOINT := os.Getenv("IPFS_PINATA_ENDPOINT")
 
+	// services
+	cryptoRsaService := crypto_service.NewCryptoRsaService()
+	cryptoEcdsaService := crypto_service.NewCryptoEcdsaService()
+	zipService := zip_service.NewZipService()
+
 	// constants
-	providerEcdsaPrivateKey, err := ecdsa_helpers.HexToPrivateKey(PROVIDER_ECDSA_PRIVATE_KEY)
+	providerEcdsaPrivateKey, err := cryptoEcdsaService.LoadPrivateKeyFromString(PROVIDER_ECDSA_PRIVATE_KEY)
 	if err != nil {
 		log.Fatal("cannot load ecdsa private key", err)
 	}
-	providerEcdsaAddress, err := ecdsa_helpers.PrivateKeyToAddress(providerEcdsaPrivateKey)
+	providerEcdsaAddress, err := cryptoEcdsaService.PrivateKeyToAddress(providerEcdsaPrivateKey)
 	if err != nil {
 		log.Fatal("cannot load ecdsa address ", err)
 	}
-	providerRsaPrivateKey, err := rsa_helpers.LoadPrivateKeyFromString(PROVIDER_RSA_PRIVATE_KEY)
+	providerRsaPrivateKey, err := cryptoRsaService.LoadPrivateKeyFromString(PROVIDER_RSA_PRIVATE_KEY)
 	if err != nil {
 		log.Fatal("cannot load rsa private key", err)
 	}
@@ -55,11 +60,11 @@ func (a *ApiHandler) Handle() {
 	}
 	providerUnitPrice, _ := big.NewInt(0).SetString(PROVIDER_UNIT_PRICE, 10)
 
-	// instantiate repositories
-	artifactRepository := artifact_repository.NewIpfsArtifactRepository(IPFS_PINATA_ENDPOINT, IPFS_PINATA_APIKEY, IPFS_PINATA_SECRET)
+	// repositories
+	artifactRepository := repositories.NewIpfsArtifactRepository(IPFS_PINATA_ENDPOINT, IPFS_PINATA_APIKEY, IPFS_PINATA_SECRET)
 
-	// instantiate services
-	artifactsService := artifact.NewArtifactService(artifactRepository)
+	// core services
+	artifactsService := artifact.NewArtifactService(artifactRepository, cryptoRsaService, zipService)
 	escrowService := escrow.NewEscrowService(ethClient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 	computeService := compute.NewComputeService(
 		artifactsService,

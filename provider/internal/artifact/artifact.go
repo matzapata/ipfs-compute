@@ -6,30 +6,39 @@ import (
 	"fmt"
 	"os"
 
-	artifact_repository "github.com/matzapata/ipfs-compute/provider/internal/artifact/repository"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
-	files_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/files"
-	rsa_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/rsa"
+	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
+	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
+	zip_service "github.com/matzapata/ipfs-compute/provider/pkg/zip"
 )
 
-type ArtifactService struct {
-	ArtifactRepository artifact_repository.ArtifactRepository
+type IArtifactService interface {
+	GetArtifactExecutable(cid string) (executablePath string, err error)
+	GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*Artifact, error)
 }
 
-type ArtifactSpecification struct {
-	Env []string `json:"env"`
+type ArtifactService struct {
+	ArtifactRepository repositories.ArtifactRepository
+	CryptoRsaService   crypto_service.ICryptoRsaService
+	ZipService         zip_service.IZipService
 }
 
 type Artifact struct {
-	ArtifactSpecification
-	Owner          string `json:"owner"`
-	OwnerSignature string `json:"owner_signature"`
-	DeploymentCid  string `json:"deployment_cid"`
+	Env            []string `json:"env"`
+	Owner          string   `json:"owner"`
+	OwnerSignature string   `json:"owner_signature"`
+	DeploymentCid  string   `json:"deployment_cid"`
 }
 
-func NewArtifactService(artifactRepository artifact_repository.ArtifactRepository) *ArtifactService {
+func NewArtifactService(
+	artifactRepository repositories.ArtifactRepository,
+	cryptoRsaService crypto_service.ICryptoRsaService,
+	zipService zip_service.IZipService,
+) *ArtifactService {
 	return &ArtifactService{
 		ArtifactRepository: artifactRepository,
+		CryptoRsaService:   cryptoRsaService,
+		ZipService:         zipService,
 	}
 }
 
@@ -40,17 +49,7 @@ func (d *ArtifactService) GetArtifactExecutable(cid string) (executablePath stri
 	}
 	defer os.Remove(zippedExecutablePath)
 
-	// unzip to destination directory
-	unzippedExecutable, err := os.CreateTemp("", "executable-*")
-	if err != nil {
-		return
-	}
-	err = files_helpers.Unzip(zippedExecutablePath, unzippedExecutable.Name())
-	if err != nil {
-		return
-	}
-
-	return unzippedExecutable.Name(), nil
+	return d.ZipService.Unzip(zippedExecutablePath)
 }
 
 func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*Artifact, error) {
@@ -59,14 +58,12 @@ func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivat
 		return nil, err
 	}
 
-	// TODO: it may or may not be encrypted
-
 	// read the JSON encSpecData
 	encSpecData, err := os.ReadFile(encSpecPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading JSON data: %v", err)
 	}
-	artifactSpecification, err := rsa_helpers.DecryptBytes(providerRsaPrivateKey, encSpecData)
+	artifactSpecification, err := d.CryptoRsaService.DecryptBytes(providerRsaPrivateKey, encSpecData)
 	if err != nil {
 		return nil, fmt.Errorf("error decrypting JSON data: %v", err)
 	}

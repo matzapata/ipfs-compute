@@ -1,4 +1,4 @@
-package api_controller
+package executor_controller
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
-	api_routers "github.com/matzapata/ipfs-compute/provider/internal/controllers/api/routers"
+	executor_routers "github.com/matzapata/ipfs-compute/provider/internal/controllers/executor/routers"
 	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
 	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
@@ -77,8 +77,8 @@ func (a *ApiHandler) Handle() {
 	router := chi.NewRouter()
 
 	// setup routes
-	api_routers.SetupComputeRoutes(router, computeService)
-	api_routers.SetupHealthRotes(router)
+	executor_routers.SetupComputeRoutes(router, computeService)
+	executor_routers.SetupHealthRotes(router)
 
 	// start server
 	fmt.Println("Starting server on localhost:4000")

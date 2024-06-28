@@ -35,13 +35,21 @@ func (r *RegistryService) ResolveDomain(domain string) (*contracts.Resolver, err
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Resolver address for domain %s: %s\n", fmt.Sprintf("%x", r.HashDomain(domain)), resolverAddress.Hex())
 
-	if resolverAddress == common.HexToAddress("0x000000000000000000000000000000000000") {
+	if (resolverAddress == common.Address{}) {
 		return nil, fmt.Errorf("resolver not found for domain %s", domain)
 	}
 
 	return contracts.NewResolver(resolverAddress, r.EthClient)
+}
+
+func (r *RegistryService) ResolveServer(domain string) (string, error) {
+	resolver, err := r.ResolveDomain(domain)
+	if err != nil {
+		return "", err
+	}
+
+	return resolver.Server(nil)
 }
 
 func (r *RegistryService) RegisterDomain(privateKey *ecdsa.PrivateKey, domain string, resolverAddress common.Address) (string, error) {

@@ -7,11 +7,11 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/matzapata/ipfs-compute/provider/internal/compute"
 	api_helpers "github.com/matzapata/ipfs-compute/provider/internal/controllers/api/helpers"
+	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 )
 
-func SetupComputeRoutes(router *chi.Mux, computeService *compute.ComputeService) {
+func SetupComputeRoutes(router *chi.Mux, computeService domain.IComputeService) {
 	router.HandleFunc("/{cid}", func(w http.ResponseWriter, r *http.Request) {
 		cid := chi.URLParam(r, "cid")
 		if cid == "" {

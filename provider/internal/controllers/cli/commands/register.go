@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
-	"github.com/matzapata/ipfs-compute/provider/pkg/registry"
+	"github.com/matzapata/ipfs-compute/provider/internal/services"
 )
 
 // register a provider
@@ -20,7 +20,7 @@ func RegisterProvider(hexPrivateKey string, rpc string, domain string, resolverA
 	}
 
 	// create a new registry service
-	registryService := registry.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
 
 	// recover the private key
 	privateKey, err := crypto.HexToECDSA(hexPrivateKey)

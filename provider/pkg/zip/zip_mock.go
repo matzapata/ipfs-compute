@@ -10,10 +10,12 @@ func NewMockZipService() *MockZipService {
 	return &MockZipService{}
 }
 
-func (z *MockZipService) Unzip(src string) (string, error) {
-	panic("not implemented")
+func (m *MockZipService) Unzip(src string) (string, error) {
+	args := m.Called(src)
+	return args.String(0), args.Error(1)
 }
 
-func (z *MockZipService) ZipFolder(srcFolder string, destZip string) error {
-	panic("not implemented")
+func (m *MockZipService) ZipFolder(srcFolder string, destZip string) error {
+	args := m.Called(srcFolder, destZip)
+	return args.Error(1)
 }

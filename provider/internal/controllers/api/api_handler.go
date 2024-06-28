@@ -9,13 +9,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
-	"github.com/matzapata/ipfs-compute/provider/internal/artifact"
-	"github.com/matzapata/ipfs-compute/provider/internal/compute"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	api_routers "github.com/matzapata/ipfs-compute/provider/internal/controllers/api/routers"
 	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
+	"github.com/matzapata/ipfs-compute/provider/internal/services"
 	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
-	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
 	zip_service "github.com/matzapata/ipfs-compute/provider/pkg/zip"
 )
 
@@ -64,9 +62,9 @@ func (a *ApiHandler) Handle() {
 	artifactRepository := repositories.NewIpfsArtifactRepository(IPFS_PINATA_ENDPOINT, IPFS_PINATA_APIKEY, IPFS_PINATA_SECRET)
 
 	// core services
-	artifactsService := artifact.NewArtifactService(artifactRepository, cryptoRsaService, zipService)
-	escrowService := escrow.NewEscrowService(ethClient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
-	computeService := compute.NewComputeService(
+	artifactsService := services.NewArtifactService(artifactRepository, cryptoRsaService, zipService)
+	escrowService := services.NewEscrowService(ethClient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+	computeService := services.NewComputeService(
 		artifactsService,
 		escrowService,
 		providerEcdsaPrivateKey,

@@ -1,4 +1,4 @@
-package registry
+package services
 
 import (
 	"crypto/ecdsa"
@@ -6,18 +6,18 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/matzapata/ipfs-compute/provider/internal/contracts"
 	eth_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/eth"
-	registry_contracts "github.com/matzapata/ipfs-compute/provider/pkg/registry/contracts"
 	"golang.org/x/crypto/sha3"
 )
 
 type RegistryService struct {
 	EthClient *ethclient.Client
-	Registry  *registry_contracts.Registry
+	Registry  *contracts.Registry
 }
 
 func NewRegistryService(client *ethclient.Client, registryAddress common.Address) *RegistryService {
-	registry, err := registry_contracts.NewRegistry(registryAddress, client)
+	registry, err := contracts.NewRegistry(registryAddress, client)
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +29,7 @@ func NewRegistryService(client *ethclient.Client, registryAddress common.Address
 }
 
 // Resolve the domain to get the provider
-func (r *RegistryService) ResolveDomain(domain string) (*registry_contracts.Resolver, error) {
+func (r *RegistryService) ResolveDomain(domain string) (*contracts.Resolver, error) {
 	// get resolver address and instantiate it
 	resolverAddress, err := r.Registry.Resolver(nil, r.HashDomain(domain))
 	if err != nil {
@@ -41,7 +41,7 @@ func (r *RegistryService) ResolveDomain(domain string) (*registry_contracts.Reso
 		return nil, fmt.Errorf("resolver not found for domain %s", domain)
 	}
 
-	return registry_contracts.NewResolver(resolverAddress, r.EthClient)
+	return contracts.NewResolver(resolverAddress, r.EthClient)
 }
 
 func (r *RegistryService) RegisterDomain(privateKey *ecdsa.PrivateKey, domain string, resolverAddress common.Address) (string, error) {

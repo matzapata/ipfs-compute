@@ -1,4 +1,4 @@
-package artifact_test
+package services_test
 
 import (
 	"testing"

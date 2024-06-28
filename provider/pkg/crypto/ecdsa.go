@@ -24,7 +24,7 @@ func NewCryptoEcdsaService() *CryptoEcdsaService {
 	return &CryptoEcdsaService{}
 }
 
-func (*CryptoEcdsaService) SignMessage(data []byte, hexkey string) (*Signature, error) {
+func (cs *CryptoEcdsaService) SignMessage(data []byte, hexkey string) (*Signature, error) {
 	privateKey, err := crypto.HexToECDSA(hexkey)
 	if err != nil {
 		log.Fatal(err)
@@ -43,11 +43,11 @@ func (*CryptoEcdsaService) SignMessage(data []byte, hexkey string) (*Signature, 
 	}, nil
 }
 
-func (*CryptoEcdsaService) LoadPrivateKeyFromString(hexkey string) (*ecdsa.PrivateKey, error) {
+func (cs *CryptoEcdsaService) LoadPrivateKeyFromString(hexkey string) (*ecdsa.PrivateKey, error) {
 	return crypto.HexToECDSA(hexkey)
 }
 
-func (*CryptoEcdsaService) PrivateKeyToAddress(privateKey *ecdsa.PrivateKey) (common.Address, error) {
+func (cs *CryptoEcdsaService) PrivateKeyToAddress(privateKey *ecdsa.PrivateKey) (common.Address, error) {
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {

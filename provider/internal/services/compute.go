@@ -1,4 +1,4 @@
-package compute
+package services
 
 import (
 	"bytes"
@@ -11,38 +11,22 @@ import (
 	"os/exec"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/matzapata/ipfs-compute/provider/internal/artifact"
-	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
+	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 )
 
-type IComputeService interface {
-	Compute(cid string, payerHeader string, computeArgs string) (res *ComputeResponse, ctx *ComputeContext, err error)
-	ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*ComputeResponse, error)
-}
-
 type ComputeService struct {
-	ArtifactService         *artifact.ArtifactService
-	EscrowService           *escrow.EscrowService
+	ArtifactService         domain.IArtifactService
+	EscrowService           domain.IEscrowService
 	ProviderEcdsaPrivateKey *ecdsa.PrivateKey
 	ProviderEcdsaAddress    *common.Address
 	ProviderRsaPrivateKey   *rsa.PrivateKey
 	PriceUnit               *big.Int
 }
 
-type ComputeResponse struct {
-	Data    string            `json:"data"`
-	Status  int               `json:"status"`
-	Headers map[string]string `json:"headers"`
-}
-
-type ComputeContext struct {
-	EscrowTransaction string `json:"escrow_transaction"`
-}
-
 func NewComputeService(
 	// Services
-	artifactService *artifact.ArtifactService,
-	escrowService *escrow.EscrowService,
+	artifactService domain.IArtifactService,
+	escrowService domain.IEscrowService,
 
 	// Config
 	providerEcdsaPrivateKey *ecdsa.PrivateKey,
@@ -60,7 +44,7 @@ func NewComputeService(
 	}
 }
 
-func (c *ComputeService) Compute(cid string, payerHeader string, computeArgs string) (res *ComputeResponse, ctx *ComputeContext, err error) {
+func (c *ComputeService) Compute(cid string, payerHeader string, computeArgs string) (res *domain.ComputeResponse, ctx *domain.ComputeContext, err error) {
 	artifact, err := c.ArtifactService.GetArtifactSpecification(cid, c.ProviderRsaPrivateKey)
 	if err != nil {
 		return
@@ -106,13 +90,13 @@ func (c *ComputeService) Compute(cid string, payerHeader string, computeArgs str
 	if err != nil {
 		return
 	}
-	ctx = &ComputeContext{EscrowTransaction: tx}
+	ctx = &domain.ComputeContext{EscrowTransaction: tx}
 
 	return res, ctx, nil
 
 }
 
-func (c *ComputeService) ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*ComputeResponse, error) {
+func (c *ComputeService) ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*domain.ComputeResponse, error) {
 	// Prepare the docker run command
 	args := []string{"run", "--rm", "-v", fmt.Sprintf("%s:/app", deploymentPath)}
 	for _, env := range execEnv {
@@ -133,7 +117,7 @@ func (c *ComputeService) ExecuteProgram(deploymentPath string, execEnv []string,
 		return nil, fmt.Errorf("execution error: %v, stderr: %v", err, stderr.String())
 	}
 
-	var response ComputeResponse
+	var response domain.ComputeResponse
 	err = json.Unmarshal(out.Bytes(), &response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse output: %v", err)

@@ -7,9 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
-	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
+	"github.com/matzapata/ipfs-compute/provider/internal/services"
 	console_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/console"
-	"github.com/matzapata/ipfs-compute/provider/pkg/registry"
 )
 
 func ApproveCommand(hexPrivateKey string, rpc string, amount uint, price uint, providerDomain string) {
@@ -17,8 +16,8 @@ func ApproveCommand(hexPrivateKey string, rpc string, amount uint, price uint, p
 	if err != nil {
 		log.Fatal(err)
 	}
-	registryService := registry.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
-	escrowService := escrow.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	escrowService := services.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 
 	// resolve domain
 	resolver, err := registryService.ResolveDomain(providerDomain)

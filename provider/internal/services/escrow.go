@@ -1,4 +1,4 @@
-package escrow
+package services
 
 import (
 	"crypto/ecdsa"
@@ -7,24 +7,24 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	escrow_contracts "github.com/matzapata/ipfs-compute/provider/pkg/escrow/contracts"
+	"github.com/matzapata/ipfs-compute/provider/internal/contracts"
 	eth_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/eth"
 )
 
 type EscrowService struct {
-	Escrow        *escrow_contracts.Escrow
+	Escrow        *contracts.Escrow
 	EthClient     *ethclient.Client
 	EscrowAddress *common.Address
-	Usdc          *escrow_contracts.Erc
+	Usdc          *contracts.Erc
 }
 
 func NewEscrowService(client *ethclient.Client, escrowAddress *common.Address, usdcAddress *common.Address) *EscrowService {
-	escrow, err := escrow_contracts.NewEscrow(*escrowAddress, client)
+	escrow, err := contracts.NewEscrow(*escrowAddress, client)
 	if err != nil {
 		panic(err)
 	}
 
-	Usdc, err := escrow_contracts.NewErc(*usdcAddress, client)
+	Usdc, err := contracts.NewErc(*usdcAddress, client)
 	if err != nil {
 		panic(err)
 	}

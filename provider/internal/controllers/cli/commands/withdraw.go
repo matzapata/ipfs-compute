@@ -7,8 +7,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
+	"github.com/matzapata/ipfs-compute/provider/internal/services"
 	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
-	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
 	console_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/console"
 )
 
@@ -18,7 +18,7 @@ func WithdrawCommand(hexPrivateKey string, amount uint, rpc string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	escrowService := escrow.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+	escrowService := services.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 	cryptoEcdsaService := crypto_service.NewCryptoEcdsaService()
 
 	// confirm with the user

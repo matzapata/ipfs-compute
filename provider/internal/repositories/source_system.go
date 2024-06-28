@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	files_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/files"
 )
 
@@ -14,15 +15,15 @@ func NewSystemSourceRepository() *SystemSourceRepository {
 	return &SystemSourceRepository{}
 }
 
-func (r *SystemSourceRepository) GetSource() (*Source, error) {
-	return &Source{
+func (r *SystemSourceRepository) GetSource() (*domain.Source, error) {
+	return &domain.Source{
 		ExecutablePath: files_helpers.BuildCwdPath("main"),
 		AssetsPath:     files_helpers.BuildCwdPath("public"),
 		SpecPath:       files_helpers.BuildCwdPath("khachapuri.json"),
 	}, nil
 }
 
-func (r *SystemSourceRepository) GetSourceSpecification() (*SourceSpecification, error) {
+func (r *SystemSourceRepository) GetSourceSpecification() (*domain.SourceSpecification, error) {
 	source, err := r.GetSource()
 	if err != nil {
 		return nil, err
@@ -33,7 +34,7 @@ func (r *SystemSourceRepository) GetSourceSpecification() (*SourceSpecification,
 		return nil, err
 	}
 
-	var spec SourceSpecification
+	var spec domain.SourceSpecification
 	err = json.Unmarshal(data, &spec)
 	if err != nil {
 		return nil, err

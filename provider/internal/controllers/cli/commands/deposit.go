@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
-	"github.com/matzapata/ipfs-compute/provider/pkg/escrow"
+	"github.com/matzapata/ipfs-compute/provider/internal/services"
 	console_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/console"
 )
 
@@ -18,7 +18,7 @@ func DepositCommand(hexPrivateKey string, amount uint, rpc string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	escrowService := escrow.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+	escrowService := services.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
 
 	// confirm with the user
 	prompt := fmt.Sprintf("You are about to deposit %d USDC into the escrow account. Continue? (y/n): ", amount)

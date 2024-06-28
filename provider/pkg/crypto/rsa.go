@@ -10,13 +10,6 @@ import (
 	"fmt"
 )
 
-type ICryptoRsaService interface {
-	EncryptBytes(publicKey *rsa.PublicKey, data []byte) ([]byte, error)
-	DecryptBytes(privateKey *rsa.PrivateKey, data []byte) ([]byte, error)
-	LoadPublicKeyFromString(publicKeyStr string) (*rsa.PublicKey, error)
-	LoadPrivateKeyFromString(privateKeyStr string) (*rsa.PrivateKey, error)
-}
-
 type CryptoRsaService struct {
 }
 

@@ -1,4 +1,4 @@
-package artifact
+package services
 
 import (
 	"crypto/rsa"
@@ -7,31 +7,19 @@ import (
 	"os"
 
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
-	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
+	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 	zip_service "github.com/matzapata/ipfs-compute/provider/pkg/zip"
 )
 
-type IArtifactService interface {
-	GetArtifactExecutable(cid string) (executablePath string, err error)
-	GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*Artifact, error)
-}
-
 type ArtifactService struct {
-	ArtifactRepository repositories.ArtifactRepository
+	ArtifactRepository domain.IArtifactRepository
 	CryptoRsaService   crypto_service.ICryptoRsaService
 	ZipService         zip_service.IZipService
 }
 
-type Artifact struct {
-	Env            []string `json:"env"`
-	Owner          string   `json:"owner"`
-	OwnerSignature string   `json:"owner_signature"`
-	DeploymentCid  string   `json:"deployment_cid"`
-}
-
 func NewArtifactService(
-	artifactRepository repositories.ArtifactRepository,
+	artifactRepository domain.IArtifactRepository,
 	cryptoRsaService crypto_service.ICryptoRsaService,
 	zipService zip_service.IZipService,
 ) *ArtifactService {
@@ -52,7 +40,7 @@ func (d *ArtifactService) GetArtifactExecutable(cid string) (executablePath stri
 	return d.ZipService.Unzip(zippedExecutablePath)
 }
 
-func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*Artifact, error) {
+func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*domain.Artifact, error) {
 	encSpecPath, err := d.ArtifactRepository.GetSpecificationFile(cid)
 	if err != nil {
 		return nil, err
@@ -69,7 +57,7 @@ func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivat
 	}
 
 	// unmarshal the JSON data
-	var artifact Artifact
+	var artifact domain.Artifact
 	err = json.Unmarshal(artifactSpecification, &artifact)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling metadata json: %v", err)

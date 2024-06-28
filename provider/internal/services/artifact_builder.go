@@ -1,4 +1,4 @@
-package artifact
+package services
 
 import (
 	"crypto/rsa"
@@ -6,8 +6,7 @@ import (
 	"os"
 
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
-	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
-	"github.com/matzapata/ipfs-compute/provider/internal/source"
+	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 
 	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 	zip_service "github.com/matzapata/ipfs-compute/provider/pkg/zip"
@@ -15,15 +14,15 @@ import (
 )
 
 type ArtifactBuilderService struct {
-	SourceService    *source.SourceService
-	ArtifactRepo     repositories.ArtifactRepository
+	SourceService    domain.ISourceService
+	ArtifactRepo     domain.IArtifactRepository
 	CryptoRsaService *crypto_service.CryptoRsaService
 	ZipService       *zip_service.ZipService
 }
 
 func NewArtifactBuilderService(
-	sourceService *source.SourceService,
-	artifactRepository repositories.ArtifactRepository,
+	sourceService domain.ISourceService,
+	artifactRepository domain.IArtifactRepository,
 	cryptoRsaService *crypto_service.CryptoRsaService,
 	zipService *zip_service.ZipService,
 ) *ArtifactBuilderService {
@@ -85,7 +84,7 @@ func (as *ArtifactBuilderService) BuildDeploymentSpecification(executableCid str
 	}
 
 	// encrypt it with public key
-	deploymentJson, err := json.Marshal(Artifact{
+	deploymentJson, err := json.Marshal(domain.Artifact{
 		Env:            sourceSpec.Env,
 		Owner:          signature.Address,
 		OwnerSignature: signature.Signature,

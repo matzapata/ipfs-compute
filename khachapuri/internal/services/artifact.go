@@ -33,7 +33,7 @@ func NewArtifactService(
 func (d *ArtifactService) GetArtifactExecutable(cid string) (executablePath string, err error) {
 	zippedExecutablePath, err := d.ArtifactRepository.GetZippedExecutable(cid, config.MAX_ZIPPED_DEPLOYMENT)
 	if err != nil {
-		return
+		return "", err
 	}
 	defer os.Remove(zippedExecutablePath)
 

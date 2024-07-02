@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/controllers/cli/commands"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +17,10 @@ func NewCliHandler() *CliHandler {
 }
 
 func (c *CliHandler) Handle() {
+	// load config
+	config := config.LoadConfigFromEnv()
 
+	// Define the root command
 	rootCmd := &cobra.Command{
 		Use:   "khachapuri",
 		Short: "Create and manage kachapuri deployments",

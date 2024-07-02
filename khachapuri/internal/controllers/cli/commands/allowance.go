@@ -10,13 +10,11 @@ import (
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
 )
 
-func AllowanceCommand(address string, providerDomain string, rpc string) {
-	ethclient, err := ethclient.Dial(rpc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
-	escrowService := services.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+func AllowanceCommand(config config.Config, address string, providerDomain string) {
+	// load config
+	eth, err := ethclient.Dial(config.Rpc)
+	registryService := services.NewRegistryService(eth)
+	escrowService := services.NewEscrowService(eth)
 
 	// resolve domain
 	resolver, err := registryService.ResolveDomain(providerDomain)

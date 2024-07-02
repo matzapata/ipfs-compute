@@ -1,18 +1,17 @@
 package domain
 
 import (
-	"crypto/ecdsa"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 )
 
 type IEscrowService interface {
-	Consume(privateKey *ecdsa.PrivateKey, userAddress common.Address, priceUnit *big.Int) (string, error)
-	ApproveEscrow(privateKey *ecdsa.PrivateKey, amount uint) (string, error)
-	Deposit(privateKey *ecdsa.PrivateKey, amount uint) (string, error)
-	Withdraw(privateKey *ecdsa.PrivateKey, amount uint) (string, error)
-	Allowance(userAddress common.Address, providerAddress common.Address) (*big.Int, *big.Int, error)
+	Consume(privateKey *crypto.EcdsaPrivateKey, userAddress crypto.EcdsaAddress, priceUnit *big.Int) (string, error)
+	ApproveEscrow(privateKey *crypto.EcdsaPrivateKey, amount uint) (string, error)
+	Deposit(privateKey *crypto.EcdsaPrivateKey, amount uint) (string, error)
+	Withdraw(privateKey *crypto.EcdsaPrivateKey, amount uint) (string, error)
+	Allowance(userAddress crypto.EcdsaAddress, providerAddress crypto.EcdsaAddress) (*big.Int, *big.Int, error)
 	Balance(userAddress string) (*big.Int, error)
-	ApproveProvider(privateKey *ecdsa.PrivateKey, providerAddress string, amount uint, price uint) (string, error)
+	ApproveProvider(privateKey *crypto.EcdsaPrivateKey, providerAddress crypto.EcdsaAddress, amount uint, price uint) (string, error)
 }

@@ -2,8 +2,6 @@ package services
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,14 +10,16 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
+	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 )
 
 type ComputeService struct {
 	ArtifactService         domain.IArtifactService
 	EscrowService           domain.IEscrowService
-	ProviderEcdsaPrivateKey *ecdsa.PrivateKey
-	ProviderEcdsaAddress    *common.Address
-	ProviderRsaPrivateKey   *rsa.PrivateKey
+	ProviderEcdsaPrivateKey *crypto.EcdsaPrivateKey
+	ProviderEcdsaAddress    *crypto.EcdsaAddress
+	ProviderRsaPrivateKey   *crypto.RsaPrivateKey
+	ProviderRsaPublicKey    *crypto.RsaPublicKey
 	PriceUnit               *big.Int
 }
 
@@ -29,17 +29,19 @@ func NewComputeService(
 	escrowService domain.IEscrowService,
 
 	// Config
-	providerEcdsaPrivateKey *ecdsa.PrivateKey,
-	providerEcdsaAddress *common.Address,
-	providerRsaPrivateKey *rsa.PrivateKey,
+	providerEcdsaPrivateKey *crypto.EcdsaPrivateKey,
+	providerEcdsaAddress *crypto.EcdsaAddress,
+	providerRsaPrivateKey *crypto.RsaPrivateKey,
+	providerRsaPublicKey *crypto.RsaPublicKey,
 	priceUnit *big.Int,
 ) *ComputeService {
 	return &ComputeService{
 		ArtifactService:         artifactService,
 		EscrowService:           escrowService,
 		ProviderRsaPrivateKey:   providerRsaPrivateKey,
-		ProviderEcdsaAddress:    providerEcdsaAddress,
+		ProviderRsaPublicKey:    providerRsaPublicKey,
 		ProviderEcdsaPrivateKey: providerEcdsaPrivateKey,
+		ProviderEcdsaAddress:    providerEcdsaAddress,
 		PriceUnit:               priceUnit,
 	}
 }

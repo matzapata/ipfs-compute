@@ -1,0 +1,10 @@
+{
+  "env": {
+    "name": "khachapuri"
+  },
+  "ipfs": {
+    "gateway": "",
+    "api": "",
+    "secret": ""
+  }
+}

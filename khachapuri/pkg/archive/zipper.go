@@ -1,75 +1,25 @@
-package zip_service
+package archive
 
 import (
 	"archive/zip"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
-type IZipService interface {
-	Unzip(src string) (string, error)
-	ZipFolder(srcFolder string, destZip string) error
+type IZipper interface {
+	ZipFolder(srcFolder string, dest string) error
 }
 
-type ZipService struct {
+type Zipper struct {
 }
 
-func NewZipService() *ZipService {
-	return &ZipService{}
-}
-
-func (z *ZipService) Unzip(src string) (string, error) {
-	dest, err := os.CreateTemp("", "*")
-	if err != nil {
-		return "", err
-	}
-
-	r, err := zip.OpenReader(src)
-	if err != nil {
-		return "", fmt.Errorf("failed to open zip file: %w", err)
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		fpath := filepath.Join(dest.Name(), f.Name)
-
-		// Create directory structure if necessary
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
-			continue
-		}
-
-		// Create a file in the destination directory
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return "", err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return "", err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return "", err
-		}
-
-		_, err = io.Copy(outFile, rc)
-		// Close the file and the reader
-		outFile.Close()
-		rc.Close()
-
-		if err != nil {
-			return "", err
-		}
-	}
-	return dest.Name(), nil
+func NewZipper() *Zipper {
+	return &Zipper{}
 }
 
 // ZipFolder recursively zips a folder and its contents
-func (z *ZipService) ZipFolder(srcFolder string, destZip string) error {
+func (z *Zipper) ZipFolder(srcFolder string, destZip string) error {
 	// Create the zip file
 	zipFile, err := os.Create(destZip)
 	if err != nil {
@@ -102,14 +52,14 @@ func (z *ZipService) ZipFolder(srcFolder string, destZip string) error {
 		}
 
 		// If it's a file, add it to the zip file
-		return AddFileToZip(zipWriter, path, srcFolder)
+		return addFileToZip(zipWriter, path, srcFolder)
 	})
 
 	return err
 }
 
 // AddFileToZip adds a file to the zip archive
-func AddFileToZip(zipWriter *zip.Writer, filePath string, basePath string) error {
+func addFileToZip(zipWriter *zip.Writer, filePath string, basePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err

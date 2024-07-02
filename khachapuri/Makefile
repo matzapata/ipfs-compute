@@ -1,5 +1,5 @@
 API_BINARY_NAME=api
-CLI_BINARY_NAME=api
+CLI_BINARY_NAME=khacha
 GOOS=linux
 GOARCH=amd64
 
@@ -20,6 +20,9 @@ build-api:
 
 build-cli:
 	go build -o ./build/$(CLI_BINARY_NAME) cmd/cli/main.go
+
+install-cli: build-cli
+	sudo mv ./build/$(CLI_BINARY_NAME) /usr/local/bin/$(CLI_BINARY_NAME)
 
 clean:
 	go clean

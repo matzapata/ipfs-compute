@@ -12,15 +12,15 @@ import (
 )
 
 // register a provider
-func RegisterProvider(hexPrivateKey string, rpc string, domain string, resolverAddress string) {
+func RegisterProvider(cfg config.Config, hexPrivateKey string, domain string, resolverAddress string) {
 	// dial the ethereum client
-	ethclient, err := ethclient.Dial(rpc)
+	eth, err := ethclient.Dial(cfg.Rpc)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// create a new registry service
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	registryService := services.NewRegistryService(eth)
 
 	// recover the private key
 	privateKey, err := crypto.HexToECDSA(hexPrivateKey)

@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
-	files_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/files"
+	"github.com/matzapata/ipfs-compute/provider/pkg/system"
 )
 
 type SystemSourceRepository struct {
@@ -17,9 +17,9 @@ func NewSystemSourceRepository() *SystemSourceRepository {
 
 func (r *SystemSourceRepository) GetSource() (*domain.Source, error) {
 	return &domain.Source{
-		ExecutablePath: files_helpers.BuildCwdPath("main"),
-		AssetsPath:     files_helpers.BuildCwdPath("public"),
-		SpecPath:       files_helpers.BuildCwdPath("khachapuri.json"),
+		ExecutablePath: system.BuildCwdPath("main"),
+		AssetsPath:     system.BuildCwdPath("public"),
+		SpecPath:       system.BuildCwdPath("khachapuri.json"),
 	}, nil
 }
 

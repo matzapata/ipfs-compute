@@ -11,13 +11,13 @@ import (
 	console_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/console"
 )
 
-func ApproveCommand(hexPrivateKey string, rpc string, amount uint, price uint, providerDomain string) {
-	ethclient, err := ethclient.Dial(rpc)
+func ApproveCommand(config config.Config, hexPrivateKey string, amount uint, price uint, providerDomain string) {
+	eth, err := ethclient.Dial(config.Rpc)
 	if err != nil {
 		log.Fatal(err)
 	}
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
-	escrowService := services.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+	registryService := services.NewRegistryService(eth)
+	escrowService := services.NewEscrowService(eth)
 
 	// resolve domain
 	resolver, err := registryService.ResolveDomain(providerDomain)

@@ -1,32 +1,28 @@
 package services
 
 import (
-	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
-	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
-	zip_service "github.com/matzapata/ipfs-compute/provider/pkg/zip"
+	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
+	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 )
 
 type ArtifactService struct {
 	ArtifactRepository domain.IArtifactRepository
-	CryptoRsaService   crypto_service.ICryptoRsaService
-	ZipService         zip_service.IZipService
+	Unzipper           archive.IUnzipper
 }
 
 func NewArtifactService(
 	artifactRepository domain.IArtifactRepository,
-	cryptoRsaService crypto_service.ICryptoRsaService,
-	zipService zip_service.IZipService,
+	unzipper archive.IUnzipper,
 ) *ArtifactService {
 	return &ArtifactService{
 		ArtifactRepository: artifactRepository,
-		CryptoRsaService:   cryptoRsaService,
-		ZipService:         zipService,
+		Unzipper:           unzipper,
 	}
 }
 
@@ -37,10 +33,10 @@ func (d *ArtifactService) GetArtifactExecutable(cid string) (executablePath stri
 	}
 	defer os.Remove(zippedExecutablePath)
 
-	return d.ZipService.Unzip(zippedExecutablePath)
+	return d.Unzipper.Unzip(zippedExecutablePath)
 }
 
-func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*domain.Artifact, error) {
+func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *crypto.RsaPrivateKey) (*domain.Artifact, error) {
 	encSpecPath, err := d.ArtifactRepository.GetSpecificationFile(cid)
 	if err != nil {
 		return nil, err
@@ -51,7 +47,7 @@ func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivat
 	if err != nil {
 		return nil, fmt.Errorf("error reading JSON data: %v", err)
 	}
-	artifactSpecification, err := d.CryptoRsaService.DecryptBytes(providerRsaPrivateKey, encSpecData)
+	artifactSpecification, err := crypto.RsaDecryptBytes(providerRsaPrivateKey, encSpecData)
 	if err != nil {
 		return nil, fmt.Errorf("error decrypting JSON data: %v", err)
 	}

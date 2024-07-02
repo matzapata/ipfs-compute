@@ -1,4 +1,4 @@
-package files_helpers
+package system
 
 import (
 	"os"

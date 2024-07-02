@@ -6,25 +6,28 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/contracts"
-	eth_helpers "github.com/matzapata/ipfs-compute/provider/pkg/helpers/eth"
+	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 	"golang.org/x/crypto/sha3"
 )
 
 type RegistryService struct {
-	EthClient *ethclient.Client
-	Registry  *contracts.Registry
+	EthClient        *ethclient.Client
+	Registry         *contracts.Registry
+	EthAuthenticator eth.IEthAuthenticator
 }
 
-func NewRegistryService(client *ethclient.Client, registryAddress common.Address) *RegistryService {
-	registry, err := contracts.NewRegistry(registryAddress, client)
+func NewRegistryService(client *ethclient.Client, ethAuthenticator eth.IEthAuthenticator) *RegistryService {
+	registry, err := contracts.NewRegistry(config.REGISTRY_ADDRESS, client)
 	if err != nil {
 		panic(err)
 	}
 
 	return &RegistryService{
-		EthClient: client,
-		Registry:  registry,
+		EthClient:        client,
+		Registry:         registry,
+		EthAuthenticator: ethAuthenticator,
 	}
 }
 
@@ -53,7 +56,7 @@ func (r *RegistryService) ResolveServer(domain string) (string, error) {
 }
 
 func (r *RegistryService) RegisterDomain(privateKey *ecdsa.PrivateKey, domain string, resolverAddress common.Address) (string, error) {
-	auth, err := eth_helpers.BuildAuth(privateKey, r.EthClient, nil)
+	auth, err := r.EthAuthenticator.Authenticate(privateKey)
 	if err != nil {
 		return "", err
 	}

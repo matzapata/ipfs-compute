@@ -1,58 +1,44 @@
-package crypto_service
+package crypto
 
 import (
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
+	geth_crypto "github.com/ethereum/go-ethereum/crypto"
 )
 
-type Signature struct {
-	Hash      string `json:"hash"`
-	Signature string `json:"signature"`
-	Address   string `json:"address"`
-}
-
-type CryptoEcdsaService struct {
-}
-
-func NewCryptoEcdsaService() *CryptoEcdsaService {
-	return &CryptoEcdsaService{}
-}
-
-func (cs *CryptoEcdsaService) SignMessage(data []byte, hexkey string) (*Signature, error) {
-	privateKey, err := crypto.HexToECDSA(hexkey)
+func EcdsaSignMessage(data []byte, hexkey string) (*EcdsaSignature, error) {
+	privateKey, err := geth_crypto.HexToECDSA(hexkey)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	hash := crypto.Keccak256Hash(data)
-	signature, err := crypto.Sign(hash.Bytes(), privateKey)
+	hash := geth_crypto.Keccak256Hash(data)
+	signature, err := geth_crypto.Sign(hash.Bytes(), privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign message: %v", err)
 	}
 
-	return &Signature{
+	return &EcdsaSignature{
 		Hash:      hash.Hex(),
 		Signature: hexutil.Encode(signature),
-		Address:   crypto.PubkeyToAddress(privateKey.PublicKey).Hex(),
+		Address:   geth_crypto.PubkeyToAddress(privateKey.PublicKey).Hex(),
 	}, nil
 }
 
-func (cs *CryptoEcdsaService) LoadPrivateKeyFromString(hexkey string) (*ecdsa.PrivateKey, error) {
-	return crypto.HexToECDSA(hexkey)
+func EcdsaLoadPrivateKeyFromString(hexkey string) (*EcdsaPrivateKey, error) {
+	return geth_crypto.HexToECDSA(hexkey)
 }
 
-func (cs *CryptoEcdsaService) PrivateKeyToAddress(privateKey *ecdsa.PrivateKey) (common.Address, error) {
+func EcdsaPrivateKeyToAddress(privateKey *EcdsaPrivateKey) (EcdsaAddress, error) {
 	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	publicKeyECDSA, ok := publicKey.(*EcdsaPublicKey)
 	if !ok {
 		return common.Address{}, errors.New("error casting public key to ECDSA")
 	}
 
-	return crypto.PubkeyToAddress(*publicKeyECDSA), nil
+	return geth_crypto.PubkeyToAddress(*publicKeyECDSA), nil
 }

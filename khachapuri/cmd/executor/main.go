@@ -1,8 +1,16 @@
 package main
 
-import executor_controller "github.com/matzapata/ipfs-compute/provider/internal/controllers/executor"
+import (
+	"log"
+
+	executor_controller "github.com/matzapata/ipfs-compute/provider/internal/controllers/executor"
+)
 
 func main() {
-	controller := executor_controller.NewApiHandler()
+	controller, err := executor_controller.NewApiHandler()
+	if err != nil {
+		log.Panic(err)
+	}
+
 	controller.Handle()
 }

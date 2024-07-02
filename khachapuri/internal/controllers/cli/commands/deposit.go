@@ -13,12 +13,12 @@ import (
 )
 
 // Deposit funds into the escrow account
-func DepositCommand(hexPrivateKey string, amount uint, rpc string) {
-	ethclient, err := ethclient.Dial(rpc)
+func DepositCommand(cfg config.Config, hexPrivateKey string, amount uint) {
+	eth, err := ethclient.Dial(cfg.Rpc)
 	if err != nil {
 		log.Fatal(err)
 	}
-	escrowService := services.NewEscrowService(ethclient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+	escrowService := services.NewEscrowService(eth)
 
 	// confirm with the user
 	prompt := fmt.Sprintf("You are about to deposit %d USDC into the escrow account. Continue? (y/n): ", amount)

@@ -9,68 +9,93 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
-	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	executor_routers "github.com/matzapata/ipfs-compute/provider/internal/controllers/executor/routers"
 	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
-	crypto_service "github.com/matzapata/ipfs-compute/provider/pkg/crypto"
-	zip_service "github.com/matzapata/ipfs-compute/provider/pkg/zip"
+	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
+	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
+	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 )
 
 type ApiHandler struct {
+	ProviderEcdsaAddress     crypto.EcdsaAddress
+	ProviderEcdsaPrivateKey  crypto.EcdsaPrivateKey
+	ProviderRsaPrivateKey    crypto.RsaPrivateKey
+	ProviderRsaPublicKey     crypto.RsaPublicKey
+	ProviderComputeUnitPrice *big.Int
+	EthClient                ethclient.Client
+	IpfsGateway              string
+	IpfsPinataApikey         string
+	IpfsPinataSecret         string
 }
 
-func NewApiHandler() *ApiHandler {
-	return &ApiHandler{}
-}
-
-func (a *ApiHandler) Handle() {
+func NewApiHandler() (*ApiHandler, error) {
 	// load environment variables and configs
 	RPC_URL := os.Getenv("RPC_URL")
 	PROVIDER_ECDSA_PRIVATE_KEY := os.Getenv("PROVIDER_ECDSA_PRIVATE_KEY")
 	PROVIDER_RSA_PRIVATE_KEY := os.Getenv("PROVIDER_RSA_PRIVATE_KEY")
+	PROVIDER_RSA_PUBLIC_KEY := os.Getenv("PROVIDER_RSA_PUBLIC_KEY")
 	PROVIDER_UNIT_PRICE := os.Getenv("PROVIDER_UNIT_PRICE")
 	IPFS_PINATA_APIKEY := os.Getenv("IPFS_PINATA_APIKEY")
 	IPFS_PINATA_SECRET := os.Getenv("IPFS_PINATA_SECRET")
 	IPFS_PINATA_ENDPOINT := os.Getenv("IPFS_PINATA_ENDPOINT")
 
-	// services
-	cryptoRsaService := crypto_service.NewCryptoRsaService()
-	cryptoEcdsaService := crypto_service.NewCryptoEcdsaService()
-	zipService := zip_service.NewZipService()
-
 	// constants
-	providerEcdsaPrivateKey, err := cryptoEcdsaService.LoadPrivateKeyFromString(PROVIDER_ECDSA_PRIVATE_KEY)
+	providerEcdsaPrivateKey, err := crypto.EcdsaLoadPrivateKeyFromString(PROVIDER_ECDSA_PRIVATE_KEY)
 	if err != nil {
 		log.Fatal("cannot load ecdsa private key", err)
 	}
-	providerEcdsaAddress, err := cryptoEcdsaService.PrivateKeyToAddress(providerEcdsaPrivateKey)
+	providerEcdsaAddress, err := crypto.EcdsaPrivateKeyToAddress(providerEcdsaPrivateKey)
 	if err != nil {
 		log.Fatal("cannot load ecdsa address ", err)
 	}
-	providerRsaPrivateKey, err := cryptoRsaService.LoadPrivateKeyFromString(PROVIDER_RSA_PRIVATE_KEY)
+	providerRsaPrivateKey, err := crypto.RsaLoadPrivateKeyFromString(PROVIDER_RSA_PRIVATE_KEY)
 	if err != nil {
 		log.Fatal("cannot load rsa private key", err)
+	}
+	providerRsaPublicKey, err := crypto.RsaLoadPublicKeyFromString(PROVIDER_RSA_PUBLIC_KEY)
+	if err != nil {
+		log.Fatal("cannot load rsa public key", err)
 	}
 	ethClient, err := ethclient.Dial(RPC_URL)
 	if err != nil {
 		log.Fatal("cannot connect to rpc", err)
 	}
-	providerUnitPrice, _ := big.NewInt(0).SetString(PROVIDER_UNIT_PRICE, 10)
+	providerUnitPrice, success := big.NewInt(0).SetString(PROVIDER_UNIT_PRICE, 10)
+	if !success {
+		log.Fatal("couldn't parse provider unit price")
+	}
 
+	return &ApiHandler{
+		ProviderEcdsaAddress:     providerEcdsaAddress,
+		ProviderEcdsaPrivateKey:  *providerEcdsaPrivateKey,
+		ProviderRsaPrivateKey:    *providerRsaPrivateKey,
+		ProviderRsaPublicKey:     *providerRsaPublicKey,
+		ProviderComputeUnitPrice: providerUnitPrice,
+		EthClient:                *ethClient,
+		IpfsGateway:              IPFS_PINATA_ENDPOINT,
+		IpfsPinataApikey:         IPFS_PINATA_APIKEY,
+		IpfsPinataSecret:         IPFS_PINATA_SECRET,
+	}, nil
+}
+
+func (a *ApiHandler) Handle() {
 	// repositories
-	artifactRepository := repositories.NewIpfsArtifactRepository(IPFS_PINATA_ENDPOINT, IPFS_PINATA_APIKEY, IPFS_PINATA_SECRET)
+	artifactRepository := repositories.NewIpfsArtifactRepository(a.IpfsGateway, a.IpfsPinataApikey, a.IpfsPinataSecret)
 
 	// core services
-	artifactsService := services.NewArtifactService(artifactRepository, cryptoRsaService, zipService)
-	escrowService := services.NewEscrowService(ethClient, &config.ESCROW_ADDRESS, &config.USDC_ADDRESS)
+	unzipper := archive.NewUnzipper()
+	ethAuthenticator := eth.NewEthAuthenticator(&a.EthClient)
+	artifactsService := services.NewArtifactService(artifactRepository, unzipper)
+	escrowService := services.NewEscrowService(&a.EthClient, ethAuthenticator)
 	computeService := services.NewComputeService(
 		artifactsService,
 		escrowService,
-		providerEcdsaPrivateKey,
-		&providerEcdsaAddress,
-		providerRsaPrivateKey,
-		providerUnitPrice,
+		&a.ProviderEcdsaPrivateKey,
+		&a.ProviderEcdsaAddress,
+		&a.ProviderRsaPrivateKey,
+		&a.ProviderRsaPublicKey,
+		a.ProviderComputeUnitPrice,
 	)
 
 	// create router
@@ -82,7 +107,7 @@ func (a *ApiHandler) Handle() {
 
 	// start server
 	fmt.Println("Starting server on localhost:4000")
-	err = http.ListenAndServe(":4000", router)
+	err := http.ListenAndServe(":4000", router)
 	if err != nil {
 		panic(err)
 	}

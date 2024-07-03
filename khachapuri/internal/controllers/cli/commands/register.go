@@ -5,25 +5,25 @@ import (
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
+	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
+	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 )
 
 // register a provider
-func RegisterProvider(cfg config.Config, hexPrivateKey string, domain string, resolverAddress string) {
-	// dial the ethereum client
-	eth, err := ethclient.Dial(cfg.Rpc)
+func RegisterProvider(cfg *config.Config, domain string, resolverAddress string, adminPrivateKey string) {
+	ethClient, err := ethclient.Dial(cfg.EthRpc)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// create a new registry service
-	registryService := services.NewRegistryService(eth)
+	defer ethClient.Close()
+	ethAuthenticator := eth.NewEthAuthenticator(ethClient)
+	registryService := services.NewRegistryService(ethClient, ethAuthenticator)
 
 	// recover the private key
-	privateKey, err := crypto.HexToECDSA(hexPrivateKey)
+	privateKey, err := crypto.EcdsaLoadPrivateKeyFromString(adminPrivateKey)
 	if err != nil {
 		log.Fatal(err)
 	}

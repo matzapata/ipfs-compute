@@ -7,14 +7,17 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
+	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 )
 
-func ResolveCommand(rpc string, domain string) {
-	ethclient, err := ethclient.Dial(rpc)
+func ResolveCommand(cfg *config.Config, domain string) {
+	ethClient, err := ethclient.Dial(cfg.EthRpc)
 	if err != nil {
 		log.Fatal(err)
 	}
-	registryService := services.NewRegistryService(ethclient, config.REGISTRY_ADDRESS)
+	defer ethClient.Close()
+	ethAuthenticator := eth.NewEthAuthenticator(ethClient)
+	registryService := services.NewRegistryService(ethClient, ethAuthenticator)
 
 	// resolve domain
 	resolver, err := registryService.ResolveDomain(domain)

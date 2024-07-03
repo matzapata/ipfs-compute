@@ -1,4 +1,4 @@
-package gateway_routers
+package routers
 
 import (
 	"log"

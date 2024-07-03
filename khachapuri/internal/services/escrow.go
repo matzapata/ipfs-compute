@@ -55,14 +55,14 @@ func (s *EscrowService) Consume(privateKey *crypto.EcdsaPrivateKey, userAddress 
 
 }
 
-func (s *EscrowService) ApproveEscrow(privateKey *crypto.EcdsaPrivateKey, amount uint) (string, error) {
+func (s *EscrowService) ApproveEscrow(privateKey *crypto.EcdsaPrivateKey, amount *big.Int) (string, error) {
 	auth, err := s.Authenticator.Authenticate(privateKey)
 	if err != nil {
 		return "", err
 	}
 
 	// Approve escrow contract to spend USDC
-	approveTx, err := s.Usdc.Approve(auth, config.ESCROW_ADDRESS, big.NewInt(int64(amount)))
+	approveTx, err := s.Usdc.Approve(auth, config.ESCROW_ADDRESS, amount)
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +70,7 @@ func (s *EscrowService) ApproveEscrow(privateKey *crypto.EcdsaPrivateKey, amount
 	return approveTx.Hash().Hex(), nil
 }
 
-func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount uint) (string, error) {
+func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount *big.Int) (string, error) {
 	// recover address from private key
 	address, err := crypto.EcdsaPrivateKeyToAddress(privateKey)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount uint)
 	if err != nil {
 		return "", err
 	}
-	if allowance.Cmp(big.NewInt(int64(amount))) < 0 {
+	if allowance.Cmp(amount) < 0 {
 		return "", errors.New("escrow contract is not approved to spend USDC")
 	}
 
@@ -91,7 +91,7 @@ func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount uint)
 	if err != nil {
 		return "", err
 	}
-	depositTx, err := s.Escrow.Deposit(auth, big.NewInt(int64(amount)))
+	depositTx, err := s.Escrow.Deposit(auth, amount)
 	if err != nil {
 		return "", err
 	}
@@ -99,13 +99,13 @@ func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount uint)
 	return depositTx.Hash().Hex(), err
 }
 
-func (s *EscrowService) Withdraw(privateKey *crypto.EcdsaPrivateKey, amount uint) (string, error) {
+func (s *EscrowService) Withdraw(privateKey *crypto.EcdsaPrivateKey, amount *big.Int) (string, error) {
 	auth, err := s.Authenticator.Authenticate(privateKey)
 	if err != nil {
 		return "", err
 	}
 
-	tx, err := s.Escrow.Withdraw(auth, big.NewInt(int64(amount)))
+	tx, err := s.Escrow.Withdraw(auth, amount)
 	if err != nil {
 		return "", err
 	}
@@ -123,14 +123,14 @@ func (s *EscrowService) Balance(userAddress string) (*big.Int, error) {
 	return s.Escrow.BalanceOf(nil, account)
 }
 
-func (s *EscrowService) ApproveProvider(privateKey *crypto.EcdsaPrivateKey, providerAddress crypto.EcdsaAddress, amount uint, price uint) (string, error) {
+func (s *EscrowService) ApproveProvider(privateKey *crypto.EcdsaPrivateKey, providerAddress crypto.EcdsaAddress, amount *big.Int, price *big.Int) (string, error) {
 	auth, err := s.Authenticator.Authenticate(privateKey)
 	if err != nil {
 		return "", err
 	}
 
 	// Approve provider to spend USDC
-	tx, err := s.Escrow.Approve(auth, providerAddress, big.NewInt(int64(amount)), big.NewInt(int64(price)))
+	tx, err := s.Escrow.Approve(auth, providerAddress, amount, price)
 	if err != nil {
 		return "", err
 	}

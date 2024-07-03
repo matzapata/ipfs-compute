@@ -1,5 +1,6 @@
-API_BINARY_NAME=api
-CLI_BINARY_NAME=khacha
+PROVIDER_BINARY_NAME=provider
+CLI_BINARY_NAME=khachapuri
+GATEWAY_BINARY_NAME=gateway
 GOOS=linux
 GOARCH=amd64
 
@@ -9,17 +10,23 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-run-api: 
-	go run cmd/api/main.go
+run-provider: 
+	go run cmd/provider/main.go
 
 run-cli:
 	go run cmd/cli/main.go
 
-build-api:
-	go build -o ./build/$(API_BINARY_NAME) cmd/api/main.go
+run-gateway:
+	go run cmd/gateway/main.go
+
+build-provider:
+	go build -o ./build/$(PROVIDER_BINARY_NAME) cmd/provider/main.go
 
 build-cli:
 	go build -o ./build/$(CLI_BINARY_NAME) cmd/cli/main.go
+
+build-gateway:
+	go build -o ./build/$(GATEWAY_BINARY_NAME) cmd/gateway/main.go
 
 install-cli: build-cli
 	sudo mv ./build/$(CLI_BINARY_NAME) /usr/local/bin/$(CLI_BINARY_NAME)

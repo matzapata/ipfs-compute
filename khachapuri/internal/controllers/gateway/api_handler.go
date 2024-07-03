@@ -7,13 +7,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
-	gateway_routers "github.com/matzapata/ipfs-compute/provider/internal/controllers/gateway/routers"
+	"github.com/matzapata/ipfs-compute/provider/internal/controllers/gateway/routers"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
 	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 )
 
 type ApiHandler struct {
-	EthClient ethclient.Client
+	Router *chi.Mux
 }
 
 func NewApiHandler() (*ApiHandler, error) {
@@ -26,25 +26,24 @@ func NewApiHandler() (*ApiHandler, error) {
 		return nil, err
 	}
 
-	return &ApiHandler{
-		EthClient: *ethClient,
-	}, nil
-}
-
-func (c *ApiHandler) Handle() {
 	// create registry service
-	ethAuthenticator := eth.NewEthAuthenticator(&c.EthClient)
-	registryService := services.NewRegistryService(&c.EthClient, ethAuthenticator)
+	ethAuthenticator := eth.NewEthAuthenticator(ethClient)
+	registryService := services.NewRegistryService(ethClient, ethAuthenticator)
 
 	// create router
 	router := chi.NewRouter()
 
 	// setup routes
-	gateway_routers.SetupProxyRouter(router, registryService)
+	routers.SetupProxyRouter(router, registryService)
 
-	// start server
-	fmt.Println("Starting server on localhost:4000")
-	err := http.ListenAndServe(":4000", router)
+	return &ApiHandler{
+		Router: router,
+	}, nil
+}
+
+func (c *ApiHandler) Handle(addr string) {
+	fmt.Println("Starting server...")
+	err := http.ListenAndServe(addr, c.Router)
 	if err != nil {
 		panic(err)
 	}

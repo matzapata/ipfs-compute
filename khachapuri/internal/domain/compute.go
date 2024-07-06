@@ -2,7 +2,6 @@ package domain
 
 type IComputeService interface {
 	Compute(cid string, payerHeader string, computeArgs string) (res *ComputeResponse, ctx *ComputeContext, err error)
-	ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*ComputeResponse, error)
 }
 
 type ComputeResponse struct {

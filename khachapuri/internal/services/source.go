@@ -8,9 +8,9 @@ type SourceService struct {
 	SourceRepository domain.ISourceRepository
 }
 
-func NewSourceService(repo domain.ISourceRepository) *SourceService {
+func NewSourceService(sourceRepository domain.ISourceRepository) *SourceService {
 	return &SourceService{
-		SourceRepository: repo,
+		SourceRepository: sourceRepository,
 	}
 }
 

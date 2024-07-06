@@ -21,13 +21,13 @@ func SetupProxyRouter(router *chi.Mux, registryService domain.IRegistryService) 
 		}
 		subdomain := parts[0]
 
-		target, err := registryService.ResolveServer(subdomain)
+		target, err := registryService.ResolveDomain(subdomain)
 		if err != nil {
 			http.Error(w, "Domain not found", http.StatusNotFound)
 			return
 		}
 
-		url, err := url.Parse(target)
+		url, err := url.Parse(target.ServerEndpoint)
 		if err != nil {
 			log.Fatal(err)
 		}

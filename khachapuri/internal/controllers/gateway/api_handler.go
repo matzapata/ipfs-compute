@@ -3,32 +3,28 @@ package gateway_controller
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/controllers/gateway/routers"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
-	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 )
 
 type ApiHandler struct {
 	Router *chi.Mux
 }
 
-func NewApiHandler() (*ApiHandler, error) {
-	// load env vars
-	RPC_URL := os.Getenv("RPC_URL")
+func NewApiHandler(cfg *config.Config) (*ApiHandler, error) {
 
 	// create eth client
-	ethClient, err := ethclient.Dial(RPC_URL)
+	ethClient, err := ethclient.Dial(cfg.EthRpc)
 	if err != nil {
 		return nil, err
 	}
 
 	// create registry service
-	ethAuthenticator := eth.NewEthAuthenticator(ethClient)
-	registryService := services.NewRegistryService(ethClient, ethAuthenticator)
+	registryService := services.NewRegistryService(ethClient, *cfg.RegistryAddress)
 
 	// create router
 	router := chi.NewRouter()

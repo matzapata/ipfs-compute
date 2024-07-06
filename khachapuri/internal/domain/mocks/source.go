@@ -40,7 +40,7 @@ func (m *MockSourceRepository) GetSource() (*domain.Source, error) {
 func (m *MockSourceRepository) GetSourceSpecification() (*domain.SourceSpecification, error) {
 	args := m.Called()
 
-	var sourceSpecification *domain.SourceSpecification
+	var sourceSpecification *domain.SourceSpecification = nil
 	if args.Get(0) != nil {
 		sourceSpecification = args.Get(0).(*domain.SourceSpecification)
 	}

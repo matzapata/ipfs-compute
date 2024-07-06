@@ -29,16 +29,27 @@ func EcdsaSignMessage(data []byte, hexkey string) (*EcdsaSignature, error) {
 	}, nil
 }
 
-func EcdsaLoadPrivateKeyFromString(hexkey string) (*EcdsaPrivateKey, error) {
-	return geth_crypto.HexToECDSA(hexkey)
+func EcdsaHexToPrivateKey(hexkey string) *EcdsaPrivateKey {
+	pk, err := geth_crypto.HexToECDSA(hexkey)
+	if err != nil {
+		panic(err)
+	}
+
+	return pk
 }
 
-func EcdsaPrivateKeyToAddress(privateKey *EcdsaPrivateKey) (EcdsaAddress, error) {
+func EcdsaPrivateKeyToAddress(privateKey *EcdsaPrivateKey) *EcdsaAddress {
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*EcdsaPublicKey)
 	if !ok {
-		return common.Address{}, errors.New("error casting public key to ECDSA")
+		panic(errors.New("error casting public key to ECDSA"))
 	}
 
-	return geth_crypto.PubkeyToAddress(*publicKeyECDSA), nil
+	addr := geth_crypto.PubkeyToAddress(*publicKeyECDSA)
+	return &addr
+}
+
+func EcdsaHexToAddress(hex string) *EcdsaAddress {
+	addr := common.HexToAddress(hex)
+	return &addr
 }

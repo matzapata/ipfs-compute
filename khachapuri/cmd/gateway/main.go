@@ -1,15 +1,30 @@
 package main
 
 import (
-	"log"
-
+	"github.com/joho/godotenv"
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	gateway_controller "github.com/matzapata/ipfs-compute/provider/internal/controllers/gateway"
 )
 
 func main() {
-	controller, err := gateway_controller.NewApiHandler()
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err)
+		panic("Error loading .env file")
+	}
+
+	loader := config.NewEnvLoader()
+	cfg := config.Config{
+		RegistryAddress: config.RegistryAddress,
+		EscrowAddress:   config.EscrowAddress,
+		UsdcAddress:     config.UsdcAddress,
+		ArtifactMaxSize: config.ArtifactMaxSize,
+
+		EthRpc: loader.LoadString("ETH_RPC", true),
+	}
+
+	controller, err := gateway_controller.NewApiHandler(&cfg)
+	if err != nil {
+		panic(err)
 	}
 
 	controller.Handle(":4000")

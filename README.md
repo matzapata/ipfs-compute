@@ -6,14 +6,7 @@ Why khachapuri? It's just mindbogglingly delicious and palta was already taken.
 
 ## Structure
 
-- `cli` -> Create deployments and interact with contracts, allow providers, register providers, check balances, deposit in escrow
-- `contracts` -> Contracts for escrow contract and registry
-- `provider` -> Provider server, process requests
-- `gateway` -> Reverse proxy / localtunnel
-- `shared` -> Go shared resources
-    - Contracts
-    - ECDSA and RSA utilities
-    - Registry domain hashing
+
 
 ## Design
 
@@ -151,49 +144,10 @@ sequenceDiagram
     LTServer->>-User: Send response back to user
 ```
 
-
 ## TODO
 
+TODO: add to contract trial credits giveaway. Users cannot withdraw, neither providers, just provider assigns some free credits to some user for trial
+TODO: reputation system
 TODO: Timeout docker running 15 secs or so
 TODO: Allow unencrypted deployments, anybody can run. Cool also if there can be more than one runner
-TODO: Create library for hashing domains (https://github.com/Arachnid/eth-Registry-namehash/blob/master/index.js) maybe even assign all to owner and owner manages it (https://github.com/Registrydomains/Registry-contracts/blob/8e8cf71bc50fb1a5055dcf3d523d2ed54e725d28/contracts/registry/RegistryRegistry.sol#L29)
 
-
-```
-myproject/
-├── cmd/
-│   ├── api/
-│   │   └── main.go
-├── pkg/
-│   ├── compute/
-│   │   ├── compute.go
-│   │   └── compute_test.go
-│   ├── deployment/
-│   │   ├── deployment.go
-│   │   └── deployment_test.go
-├── internal/
-│   └── shared/
-│       ├── helpers.go
-│       └── helpers_test.go
-├── api/
-│   ├── handlers/
-│   │   ├── compute_handler.go
-│   │   ├── deployment_handler.go
-│   │   └── handlers_test.go
-│   └── router/
-│       └── router.go
-├── configs/
-│   ├── api_config.yaml
-│   ├── cli_config.yaml
-├── scripts/
-│   └── some_script.sh
-├── web/
-│   ├── static/
-│   └── templates/
-├── test/
-│   └── e2e/
-│       └── some_e2e_test.go
-├── go.mod
-├── go.sum
-└── README.md
-```

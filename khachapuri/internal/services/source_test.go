@@ -7,78 +7,64 @@ import (
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	domain_mocks "github.com/matzapata/ipfs-compute/provider/internal/domain/mocks"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 )
 
-type SourceSuiteTest struct {
-	suite.Suite
-	mockRepo *domain_mocks.MockSourceRepository
-	service  *services.SourceService
+func TestGetSource(t *testing.T) {
+	mockSourceRepo := new(domain_mocks.MockSourceRepository)
+	sourceService := &services.SourceService{
+		SourceRepository: mockSourceRepo,
+	}
+
+	t.Run("success", func(t *testing.T) {
+		expectedSource := &domain.Source{}
+		mockSourceRepo.On("GetSource").Return(expectedSource, nil).Once()
+
+		source, err := sourceService.GetSource()
+
+		assert.NoError(t, err)
+		assert.Equal(t, source, expectedSource)
+		mockSourceRepo.AssertExpectations(t)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		expectedError := errors.New("Not found")
+		mockSourceRepo.On("GetSource").Return(nil, expectedError).Once()
+
+		source, err := sourceService.GetSource()
+
+		assert.Nil(t, source)
+		assert.Equal(t, err, expectedError)
+		mockSourceRepo.AssertExpectations(t)
+	})
 }
 
-func (s *SourceSuiteTest) SetupTest() {
-	s.mockRepo = new(domain_mocks.MockSourceRepository)
-	s.service = services.NewSourceService(s.mockRepo)
-}
+func TestGetSourceSpecification(t *testing.T) {
+	mockSourceRepo := new(domain_mocks.MockSourceRepository)
+	sourceService := &services.SourceService{
+		SourceRepository: mockSourceRepo,
+	}
 
-// ==========================================================================================================
+	t.Run("success", func(t *testing.T) {
+		expectedSource := &domain.SourceSpecification{}
+		mockSourceRepo.On("GetSourceSpecification").Return(expectedSource, nil).Once()
 
-func (s *SourceSuiteTest) TestGetSource() {
-	// service should return the source from the repository
+		source, err := sourceService.GetSourceSpecification()
 
-	expectedSource := &domain.Source{}
-	s.mockRepo.On("GetSource").Return(expectedSource, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, source, expectedSource)
+		mockSourceRepo.AssertExpectations(t)
+	})
 
-	source, err := s.service.GetSource()
+	t.Run("error", func(t *testing.T) {
+		expectedError := errors.New("Not found")
+		mockSourceRepo.On("GetSourceSpecification").Return(nil, expectedError).Once()
 
-	s.mockRepo.AssertExpectations(s.T())
-	s.Equal(expectedSource, source)
-	s.NoError(err)
-}
+		source, err := sourceService.GetSourceSpecification()
 
-func (s *SourceSuiteTest) TestGetSourceError() {
-	// service should return error if repository returns error
+		assert.Nil(t, source)
+		assert.Equal(t, err, expectedError)
+		mockSourceRepo.AssertExpectations(t)
+	})
 
-	expectedError := errors.New("error")
-	s.mockRepo.On("GetSource").Return(nil, expectedError)
-
-	source, err := s.service.GetSource()
-
-	s.mockRepo.AssertExpectations(s.T())
-	s.Nil(source)
-	s.Error(err)
-}
-
-// ==========================================================================================================
-
-func (s *SourceSuiteTest) TestGetSourceSpecification() {
-	// service should return the source specification from the repository
-
-	expectedSourceSpecification := &domain.SourceSpecification{}
-	s.mockRepo.On("GetSourceSpecification").Return(expectedSourceSpecification, nil)
-
-	sourceSpecification, err := s.service.GetSourceSpecification()
-
-	s.mockRepo.AssertExpectations(s.T())
-	s.Equal(expectedSourceSpecification, sourceSpecification)
-	s.NoError(err)
-}
-
-func (s *SourceSuiteTest) TestGetSourceSpecificationError() {
-	// service should return error if repository returns error
-
-	expectedError := errors.New("error")
-	s.mockRepo.On("GetSourceSpecification").Return(nil, expectedError)
-
-	sourceSpecification, err := s.service.GetSourceSpecification()
-
-	s.mockRepo.AssertExpectations(s.T())
-	s.Nil(sourceSpecification)
-	s.Error(err)
-}
-
-// ==========================================================================================================
-
-func TestSourceSuiteTest(t *testing.T) {
-	suite.Run(t, new(SourceSuiteTest))
 }

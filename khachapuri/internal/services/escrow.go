@@ -1,45 +1,53 @@
 package services
 
 import (
-	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/contracts"
+	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 )
 
 type EscrowService struct {
-	Escrow        *contracts.Escrow
-	EthClient     *ethclient.Client
-	Usdc          *contracts.Erc
-	Authenticator eth.IEthAuthenticator
+	Escrow            domain.IEscrowContract
+	EscrowAddress     crypto.EcdsaAddress
+	Erc               domain.IErcAllowance
+	ErcAddress        crypto.EcdsaAddress
+	Authenticator     eth.IEthAuthenticator
+	TransactionWaiter eth.ITransactionWaiter
 }
 
-func NewEscrowService(client *ethclient.Client, ethAuthenticator eth.IEthAuthenticator) *EscrowService {
-	escrow, err := contracts.NewEscrow(config.ESCROW_ADDRESS, client)
+func NewEscrowService(
+	ethClient *ethclient.Client,
+	escrowAddress crypto.EcdsaAddress,
+	ercAddress crypto.EcdsaAddress,
+) *EscrowService {
+	ercContract, err := contracts.NewErc(ercAddress, ethClient)
 	if err != nil {
 		panic(err)
 	}
-
-	Usdc, err := contracts.NewErc(config.USDC_ADDRESS, client)
+	escrowContract, err := contracts.NewEscrow(escrowAddress, ethClient)
 	if err != nil {
 		panic(err)
 	}
+	ethAuthenticator := eth.NewEthAuthenticator(ethClient)
+	transactionWaiter := eth.NewTransactionWaiter(ethClient)
 
 	return &EscrowService{
-		Escrow:        escrow,
-		EthClient:     client,
-		Usdc:          Usdc,
-		Authenticator: ethAuthenticator,
+		Escrow:            escrowContract,
+		EscrowAddress:     escrowAddress,
+		Erc:               ercContract,
+		ErcAddress:        ercAddress,
+		Authenticator:     ethAuthenticator,
+		TransactionWaiter: transactionWaiter,
 	}
 }
 
-func (s *EscrowService) Consume(privateKey *crypto.EcdsaPrivateKey, userAddress crypto.EcdsaAddress, priceUnit *big.Int) (string, error) {
-	auth, err := s.Authenticator.Authenticate(privateKey)
+// executes transaction in escrow that extracts 1 credit at priceUnit from userAddress
+func (s *EscrowService) Consume(providerPrivateKey *crypto.EcdsaPrivateKey, userAddress crypto.EcdsaAddress, priceUnit *big.Int) (string, error) {
+	auth, err := s.Authenticator.Authenticate(providerPrivateKey)
 	if err != nil {
 		return "", err
 	}
@@ -55,48 +63,56 @@ func (s *EscrowService) Consume(privateKey *crypto.EcdsaPrivateKey, userAddress 
 
 }
 
-func (s *EscrowService) ApproveEscrow(privateKey *crypto.EcdsaPrivateKey, amount *big.Int) (string, error) {
-	auth, err := s.Authenticator.Authenticate(privateKey)
-	if err != nil {
-		return "", err
-	}
-
-	// Approve escrow contract to spend USDC
-	approveTx, err := s.Usdc.Approve(auth, config.ESCROW_ADDRESS, amount)
-	if err != nil {
-		return "", err
-	}
-
-	return approveTx.Hash().Hex(), nil
-}
-
-func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount *big.Int) (string, error) {
+func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount *big.Int) (*domain.DepositTransactions, error) {
 	// recover address from private key
-	address, err := crypto.EcdsaPrivateKeyToAddress(privateKey)
-	if err != nil {
-		return "", err
-	}
+	address := crypto.EcdsaPrivateKeyToAddress(privateKey)
 
 	// check if the user has approved the escrow contract to spend USDC
-	allowance, err := s.Usdc.Allowance(nil, address, config.ESCROW_ADDRESS)
+	allowance, err := s.Erc.Allowance(nil, *address, s.EscrowAddress)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	approveTx := ""
 	if allowance.Cmp(amount) < 0 {
-		return "", errors.New("escrow contract is not approved to spend USDC")
+		// Approve escrow contract to spend USDC
+		auth, err := s.Authenticator.Authenticate(privateKey)
+		if err != nil {
+			return nil, err
+		}
+
+		tx, err := s.Erc.Approve(auth, s.EscrowAddress, amount)
+		if err != nil {
+			return nil, err
+		}
+		approveTx = tx.Hash().Hex()
+
+		// wait for the approval transaction to be mined
+		_, err = s.TransactionWaiter.Wait(tx.Hash())
+		if err != nil {
+			return &domain.DepositTransactions{
+				Approval: approveTx,
+			}, err
+		}
 	}
 
 	// Deposit funds into the escrow account
 	auth, err := s.Authenticator.Authenticate(privateKey)
 	if err != nil {
-		return "", err
+		return &domain.DepositTransactions{
+			Approval: approveTx,
+		}, err
 	}
 	depositTx, err := s.Escrow.Deposit(auth, amount)
 	if err != nil {
-		return "", err
+		return &domain.DepositTransactions{
+			Approval: approveTx,
+		}, err
 	}
 
-	return depositTx.Hash().Hex(), err
+	return &domain.DepositTransactions{
+		Approval: approveTx,
+		Deposit:  depositTx.Hash().Hex(),
+	}, nil
 }
 
 func (s *EscrowService) Withdraw(privateKey *crypto.EcdsaPrivateKey, amount *big.Int) (string, error) {
@@ -117,9 +133,7 @@ func (s *EscrowService) Allowance(userAddress crypto.EcdsaAddress, providerAddre
 	return s.Escrow.Allowance(nil, userAddress, providerAddress)
 }
 
-func (s *EscrowService) Balance(userAddress string) (*big.Int, error) {
-	account := common.HexToAddress(userAddress)
-
+func (s *EscrowService) Balance(account crypto.EcdsaAddress) (*big.Int, error) {
 	return s.Escrow.BalanceOf(nil, account)
 }
 

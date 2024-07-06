@@ -18,12 +18,12 @@ type IEthAuthenticator interface {
 }
 
 type EthAuthenticator struct {
-	Client *ethclient.Client
+	EthClient *ethclient.Client
 }
 
-func NewEthAuthenticator(client *ethclient.Client) *EthAuthenticator {
+func NewEthAuthenticator(ethClient *ethclient.Client) *EthAuthenticator {
 	return &EthAuthenticator{
-		Client: client,
+		EthClient: ethClient,
 	}
 }
 
@@ -35,16 +35,16 @@ func (ea *EthAuthenticator) Authenticate(privateKey *crypto.EcdsaPrivateKey) (*b
 	}
 
 	// Some preparation for the transaction
-	nonce, err := ea.Client.PendingNonceAt(context.Background(), ownerAddress)
+	nonce, err := ea.EthClient.PendingNonceAt(context.Background(), ownerAddress)
 	if err != nil {
 		return nil, err
 	}
-	gasPrice, err := ea.Client.SuggestGasPrice(context.Background())
+	gasPrice, err := ea.EthClient.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
-	chainId, err := ea.Client.ChainID(context.Background())
+	chainId, err := ea.EthClient.ChainID(context.Background())
 	if err != nil {
 		return nil, err
 	}

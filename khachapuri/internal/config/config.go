@@ -1,38 +1,39 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"math/big"
+
+	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
+)
 
 type Config struct {
 	EthRpc                   string
-	ProviderEcdsaAddress     string
-	ProviderEcdsaPrivateKey  string
-	ProviderRsaPrivateKey    string
-	ProviderRsaPublicKey     string
-	ProviderComputeUnitPrice string
 	IpfsGateway              string
 	IpfsPinataApikey         string
 	IpfsPinataSecret         string
+	ArtifactMaxSize          uint
+	ProviderEcdsaAddress     *crypto.EcdsaAddress
+	ProviderEcdsaPrivateKey  *crypto.EcdsaPrivateKey
+	ProviderRsaPrivateKey    *crypto.RsaPrivateKey
+	ProviderRsaPublicKey     *crypto.RsaPublicKey
+	ProviderComputeUnitPrice *big.Int
+	EscrowAddress            *crypto.EcdsaAddress
+	UsdcAddress              *crypto.EcdsaAddress
+	RegistryAddress          *crypto.EcdsaAddress
 }
 
-func ReadConfig(configPath string) *Config {
-	if configPath == "" {
-		configPath = "config.yaml"
-	}
-
-	viper.SetConfigFile(configPath)
-	if err := viper.ReadInConfig(); err != nil {
-		return nil
-	}
-
-	return &Config{
-		EthRpc:                   viper.GetString("eth.rpc"),
-		ProviderEcdsaAddress:     viper.GetString("provider.ecdsa.address"),
-		ProviderEcdsaPrivateKey:  viper.GetString("provider.ecdsa.private_key"),
-		ProviderRsaPrivateKey:    viper.GetString("provider.rsa.private_key"),
-		ProviderRsaPublicKey:     viper.GetString("provider.rsa.public_key"),
-		ProviderComputeUnitPrice: viper.GetString("provider.compute.unit_price"),
-		IpfsGateway:              viper.GetString("ipfs.gateway"),
-		IpfsPinataApikey:         viper.GetString("ipfs.apikey"),
-		IpfsPinataSecret:         viper.GetString("ipfs.secret"),
-	}
+type ConfigLoader interface {
+	LoadString(key string, panicOnMissing bool) string
+	LoadInt(key string, panicOnMissing bool) int
+	LoadBool(key string, panicOnMissing bool) bool
+	LoadBigInt(key string, panicOnMissing bool) *big.Int
+	LoadEcdsaAddress(key string, panicOnMissing bool) *crypto.EcdsaAddress
+	LoadEcdsaPrivateKey(key string, panicOnMissing bool) *crypto.EcdsaPrivateKey
+	LoadRsaPrivateKey(key string, panicOnMissing bool) *crypto.RsaPrivateKey
+	LoadRsaPublicKey(key string, panicOnMissing bool) *crypto.RsaPublicKey
 }
+
+var UsdcAddress = crypto.EcdsaHexToAddress("0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359")
+var RegistryAddress = crypto.EcdsaHexToAddress("0xdb42A86B1bfe04E75B2A5F2bF7a3BBB52D7FFD2F")
+var EscrowAddress = crypto.EcdsaHexToAddress("0x5Fe8861F6571174a9564365384AE9b01CcdCd8D6")
+var ArtifactMaxSize uint = 50 * 1024 * 1024

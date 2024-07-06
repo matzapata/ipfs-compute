@@ -2,27 +2,27 @@ package commands
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
-	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 )
 
-func BalanceCommand(cfg *config.Config, address string) {
+func BalanceCommand(cfg *config.Config, address string) error {
 	ethClient, err := ethclient.Dial(cfg.EthRpc)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer ethClient.Close()
-	ethAuthenticator := eth.NewEthAuthenticator(ethClient)
-	escrowService := services.NewEscrowService(ethClient, ethAuthenticator)
+	escrowService := services.NewEscrowService(ethClient, *cfg.EscrowAddress, *cfg.UsdcAddress)
 
 	// get balance
-	balance, err := escrowService.Balance(address)
+	balance, err := escrowService.Balance(common.HexToAddress(address))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	fmt.Printf("Balance for address %s: %s\n", address, balance.String())
+	fmt.Printf("\nbalance for address %s: %s\n", address, balance.String())
+
+	return nil
 }

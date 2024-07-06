@@ -2,7 +2,6 @@ package provider_controller
 
 import (
 	"fmt"
-	"math/big"
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -12,44 +11,13 @@ import (
 	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
 	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
-	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
-	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 )
 
 type ApiHandler struct {
 	Router *chi.Mux
 }
 
-func NewApiHandler() (*ApiHandler, error) {
-	// load config
-	cfg := config.ReadConfig("")
-
-	// provider ecdsa keypair
-	providerEcdsaPrivateKey, err := crypto.EcdsaLoadPrivateKeyFromString(cfg.ProviderEcdsaPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	providerEcdsaAddress, err := crypto.EcdsaPrivateKeyToAddress(providerEcdsaPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// provider rsa keypair
-	providerRsaPrivateKey, err := crypto.RsaLoadPrivateKeyFromString(cfg.ProviderRsaPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	providerRsaPublicKey, err := crypto.RsaLoadPublicKeyFromString(cfg.ProviderRsaPublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// provider unit price
-	providerUnitPrice, success := big.NewInt(0).SetString(cfg.ProviderComputeUnitPrice, 10)
-	if !success {
-		return nil, err
-	}
-
+func NewApiHandler(cfg *config.Config) (*ApiHandler, error) {
 	// eth client
 	ethClient, err := ethclient.Dial(cfg.EthRpc)
 	if err != nil {
@@ -65,17 +33,16 @@ func NewApiHandler() (*ApiHandler, error) {
 
 	// core services
 	unzipper := archive.NewUnzipper()
-	ethAuthenticator := eth.NewEthAuthenticator(ethClient)
-	artifactsService := services.NewArtifactService(artifactRepository, unzipper)
-	escrowService := services.NewEscrowService(ethClient, ethAuthenticator)
+	artifactsService := services.NewArtifactService(artifactRepository, unzipper, cfg.ArtifactMaxSize)
+	escrowService := services.NewEscrowService(ethClient, *cfg.EscrowAddress, *cfg.UsdcAddress)
 	computeService := services.NewComputeService(
 		artifactsService,
 		escrowService,
-		providerEcdsaPrivateKey,
-		&providerEcdsaAddress,
-		providerRsaPrivateKey,
-		providerRsaPublicKey,
-		providerUnitPrice,
+		cfg.ProviderEcdsaPrivateKey,
+		cfg.ProviderEcdsaAddress,
+		cfg.ProviderRsaPrivateKey,
+		cfg.ProviderRsaPublicKey,
+		cfg.ProviderComputeUnitPrice,
 	)
 
 	// router

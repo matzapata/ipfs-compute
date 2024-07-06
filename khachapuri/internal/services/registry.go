@@ -1,61 +1,77 @@
 package services
 
 import (
-	"crypto/ecdsa"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/contracts"
+	"github.com/matzapata/ipfs-compute/provider/internal/domain"
+	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 	"github.com/matzapata/ipfs-compute/provider/pkg/eth"
 	"golang.org/x/crypto/sha3"
 )
 
 type RegistryService struct {
 	EthClient        *ethclient.Client
-	Registry         *contracts.Registry
+	Registry         domain.IRegistryContract
 	EthAuthenticator eth.IEthAuthenticator
 }
 
-func NewRegistryService(client *ethclient.Client, ethAuthenticator eth.IEthAuthenticator) *RegistryService {
-	registry, err := contracts.NewRegistry(config.REGISTRY_ADDRESS, client)
+func NewRegistryService(ethClient *ethclient.Client, registryAddress crypto.EcdsaAddress) *RegistryService {
+	registry, err := contracts.NewRegistry(registryAddress, ethClient)
 	if err != nil {
 		panic(err)
 	}
+	ethAuthenticator := eth.NewEthAuthenticator(ethClient)
 
 	return &RegistryService{
-		EthClient:        client,
+		EthClient:        ethClient,
 		Registry:         registry,
 		EthAuthenticator: ethAuthenticator,
 	}
 }
 
 // Resolve the domain to get the provider
-func (r *RegistryService) ResolveDomain(domain string) (*contracts.Resolver, error) {
+func (r *RegistryService) ResolveDomain(domainName string) (*domain.ProviderDomainData, error) {
 	// get resolver address and instantiate it
-	resolverAddress, err := r.Registry.Resolver(nil, r.HashDomain(domain))
+	resolverAddress, err := r.Registry.Resolver(nil, r.HashDomain(domainName))
 	if err != nil {
 		return nil, err
 	}
 
 	if (resolverAddress == common.Address{}) {
-		return nil, fmt.Errorf("resolver not found for domain %s", domain)
+		return nil, fmt.Errorf("resolver not found for domain %s", domainName)
 	}
 
-	return contracts.NewResolver(resolverAddress, r.EthClient)
-}
-
-func (r *RegistryService) ResolveServer(domain string) (string, error) {
-	resolver, err := r.ResolveDomain(domain)
+	resolver, err := contracts.NewResolver(resolverAddress, r.EthClient)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return resolver.Server(nil)
+	// resolve all fields
+	ecdsaAddress, err := resolver.Addr(nil)
+	if err != nil {
+		return nil, err
+	}
+	rsaPublicKey, err := resolver.Pubkey(nil)
+	if err != nil {
+		return nil, err
+	}
+	server, err := resolver.Server(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.ProviderDomainData{
+		EcdsaAddress:   ecdsaAddress.Hex(),
+		RsaPublicKey:   rsaPublicKey,
+		ServerEndpoint: server,
+	}, nil
 }
 
-func (r *RegistryService) RegisterDomain(privateKey *ecdsa.PrivateKey, domain string, resolverAddress common.Address) (string, error) {
+// Register the domain and returns the transaction hash
+func (r *RegistryService) RegisterDomain(privateKey *crypto.EcdsaPrivateKey, domain string, resolverAddress crypto.EcdsaAddress) (string, error) {
 	auth, err := r.EthAuthenticator.Authenticate(privateKey)
 	if err != nil {
 		return "", err
@@ -70,6 +86,7 @@ func (r *RegistryService) RegisterDomain(privateKey *ecdsa.PrivateKey, domain st
 	return tx.Hash().Hex(), nil
 }
 
+// Ensures consistent hashing of domain for storage
 func (r *RegistryService) HashDomain(input string) [32]byte {
 	hash := sha3.NewLegacyKeccak256()
 	_, _ = hash.Write([]byte(input))

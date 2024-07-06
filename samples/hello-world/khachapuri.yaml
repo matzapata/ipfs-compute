@@ -1,0 +1,9 @@
+
+spec:
+  admin: 
+    address: "0x123"
+  environment:
+    - ABC=${ABC}
+    - CBA=${CBA}
+
+

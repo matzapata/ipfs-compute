@@ -10,16 +10,10 @@ import (
 )
 
 type CliHandler struct {
+	RootCmd *cobra.Command
 }
 
-func NewCliHandler() *CliHandler {
-	return &CliHandler{}
-}
-
-func (c *CliHandler) Handle() {
-	// load config
-	cfg := config.ReadConfig("")
-
+func NewCliHandler(cfg *config.Config) *CliHandler {
 	// Define the root command
 	rootCmd := &cobra.Command{
 		Use:   "khachapuri",
@@ -28,90 +22,98 @@ func (c *CliHandler) Handle() {
 
 	// Define the deploy command
 	deployCmd := &cobra.Command{
-		Use:   "deploy --private-key <admin private key>",
+		Use:   "deploy --pk <admin private key>",
 		Short: "Deploy a new application to kachapuri",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			adminPrivateKey, _ := cmd.Flags().GetString("private-key")
 
-			commands.DeployCommand(cfg, adminPrivateKey)
+			err := commands.DeployCommand(cfg, adminPrivateKey)
+			handleError(err)
 		},
 	}
-	deployCmd.Flags().StringP("private-key", "", "", "admin wallet private key")
+	deployCmd.Flags().StringP("pk", "", "", "admin wallet private key")
+	deployCmd.MarkFlagRequired("pk")
 
 	// Allowance command
 	allowanceCommand := &cobra.Command{
-		Use:   "allowance --admin-address <address> --provider-address <provider>",
+		Use:   "allowance [provider-domain] --a <admin-address>",
 		Short: "Get the current allowance of the user to consume from the provider",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			adminAddress, _ := cmd.Flags().GetString("admin-address")
-			providerAddress, _ := cmd.Flags().GetString("provider-address")
+			providerDomain := args[0]
+			adminAddress, _ := cmd.Flags().GetString("a")
 
-			commands.AllowanceCommand(cfg, adminAddress, providerAddress)
+			err := commands.AllowanceCommand(cfg, adminAddress, providerDomain)
+			handleError(err)
 		},
 	}
-	allowanceCommand.Flags().StringP("admin-address", "", "", "address of the admin")
-	allowanceCommand.Flags().StringP("provider-address", "", "", "address of the provider")
+	allowanceCommand.Flags().StringP("a", "k", "", "admin wallet address")
+	allowanceCommand.MarkFlagRequired("a")
+
+	// Approve command
+	approveCommand := &cobra.Command{
+		Use:   "approve [provider-domain] [amount] [price] --pk <admin-pk>",
+		Short: "Approve the provider to consume USDC from the user's account",
+		Args:  cobra.ExactArgs(3),
+		Run: func(cmd *cobra.Command, args []string) {
+			providerDomain := args[0]
+			amount := args[1]
+			price := args[2]
+			adminPrivateKey, _ := cmd.Flags().GetString("pk")
+
+			err := commands.ApproveCommand(cfg, amount, price, providerDomain, adminPrivateKey)
+			handleError(err)
+		},
+	}
+	approveCommand.Flags().StringP("pk", "k", "", "admin wallet private key")
+	approveCommand.MarkFlagRequired("pk")
+
+	// Balance command
+	balanceCommand := &cobra.Command{
+		Use:   "balance --a <address>",
+		Short: "Get the current balance of the user in the escrow account",
+		Args:  cobra.ExactArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			address, _ := cmd.Flags().GetString("a")
+
+			err := commands.BalanceCommand(cfg, address)
+			handleError(err)
+		},
+	}
+	balanceCommand.Flags().StringP("a", "k", "", "admin wallet address")
+	balanceCommand.MarkFlagRequired("a")
 
 	// Deposit command
 	depositCommand := &cobra.Command{
-		Use:   "deposit [amount] --private-key <private key>",
+		Use:   "deposit [amount] --pk <private key>",
 		Short: "Deposit funds into the escrow account",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			amount := args[0]
-			adminPrivateKey, _ := cmd.Flags().GetString("private-key")
+			adminPrivateKey, _ := cmd.Flags().GetString("pk")
 
-			commands.DepositCommand(cfg, amount, adminPrivateKey)
+			err := commands.DepositCommand(cfg, amount, adminPrivateKey)
+			handleError(err)
 		},
 	}
-	depositCommand.Flags().StringP("private-key", "", "", "admin wallet private key")
+	depositCommand.Flags().StringP("pk", "", "", "admin wallet private key")
+	depositCommand.MarkFlagRequired("pk")
 
 	// Withdraw command
 	withdrawCommand := &cobra.Command{
-		Use:   "withdraw [amount] --private-key <private key>",
+		Use:   "withdraw [amount] --pk <private key>",
 		Short: "Withdraw funds from the escrow account",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			amount := args[0]
-			adminPrivateKey, _ := cmd.Flags().GetString("private-key")
+			adminPrivateKey, _ := cmd.Flags().GetString("pk")
 
-			commands.WithdrawCommand(cfg, amount, adminPrivateKey)
+			err := commands.WithdrawCommand(cfg, amount, adminPrivateKey)
+			handleError(err)
 		},
 	}
-	withdrawCommand.Flags().StringP("private-key", "", "", "admin wallet private key")
-
-	// Approve command
-	approveCommand := &cobra.Command{
-		Use:   "approve --amount <amount> --price <price> --provider-address <provider address>",
-		Short: "Approve the provider to consume USDC from the user's account",
-		Args:  cobra.ExactArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			amount, _ := cmd.Flags().GetString("amount")
-			price, _ := cmd.Flags().GetString("price")
-			providerAddress, _ := cmd.Flags().GetString("provider-address")
-			adminPrivateKey, _ := cmd.Flags().GetString("private-key")
-
-			commands.ApproveCommand(cfg, amount, price, providerAddress, adminPrivateKey)
-		},
-	}
-	approveCommand.Flags().UintP("amount", "", 0, "amount to approve as a bignumber string")
-	approveCommand.Flags().UintP("price", "", 0, "limit price per request as a bignumber string")
-	approveCommand.Flags().StringP("provider-address", "", "", "provider address")
-	approveCommand.Flags().StringP("private-key", "k", "", "admin wallet private key")
-
-	// Balance command
-	balanceCommand := &cobra.Command{
-		Use:   "balance [address]",
-		Short: "Get the current balance of the user in the escrow account",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			address := args[0]
-
-			commands.BalanceCommand(cfg, address)
-		},
-	}
+	withdrawCommand.Flags().StringP("pk", "", "", "admin wallet private key")
 
 	// Resolve domain command
 	resolveCmd := &cobra.Command{
@@ -121,25 +123,42 @@ func (c *CliHandler) Handle() {
 		Run: func(cmd *cobra.Command, args []string) {
 			domain := args[0]
 
-			commands.ResolveCommand(cfg, domain)
+			err := commands.ResolveCommand(cfg, domain)
+			handleError(err)
 		},
 	}
 
 	// TODO: command to deploy resolver and register it
+	// TODO: build command
+	// TODO: compute command (reads from local build) (local testing)
 	// TODO: set global config
 
 	// Add the commands to the root command
 	rootCmd.AddCommand(
+		allowanceCommand,
+		approveCommand,
 		deployCmd,
 		resolveCmd,
 		balanceCommand,
-		allowanceCommand,
 		depositCommand,
 		withdrawCommand,
 	)
 
-	if err := rootCmd.Execute(); err != nil {
+	return &CliHandler{
+		RootCmd: rootCmd,
+	}
+}
+
+func (c *CliHandler) Handle() {
+	if err := c.RootCmd.Execute(); err != nil {
 		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func handleError(err error) {
+	if err != nil {
+		fmt.Println("Error", err)
 		os.Exit(1)
 	}
 }

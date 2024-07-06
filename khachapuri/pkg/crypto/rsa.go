@@ -7,6 +7,7 @@ import (
 	"crypto/sha512"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 )
 
@@ -28,35 +29,40 @@ func RsaDecryptBytes(privateKey *RsaPrivateKey, data []byte) ([]byte, error) {
 }
 
 // LoadPublicKeyFromString loads a public RSA key from a string
-func RsaLoadPublicKeyFromString(publicKeyStr string) (*RsaPublicKey, error) {
+func RsaLoadPublicKeyFromString(publicKeyStr string) *RsaPublicKey {
 	block, _ := pem.Decode([]byte(publicKeyStr))
 	if block == nil || (block.Type != "PUBLIC KEY" && block.Type != "RSA PUBLIC KEY") {
-		return nil, fmt.Errorf("failed to decode PEM block containing public key")
+		panic(errors.New("failed to decode PEM block containing public key"))
 	}
 
 	// Try to parse as PKIX first
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err == nil {
 		if rsaPub, ok := pub.(*RsaPublicKey); ok {
-			return rsaPub, nil
+			return rsaPub
 		}
-		return nil, fmt.Errorf("not an RSA public key")
+		panic(errors.New("not an RSA public key"))
 	}
 
 	// Try to parse as PKCS1
 	rsaPub, err := x509.ParsePKCS1PublicKey(block.Bytes)
 	if err == nil {
-		return rsaPub, nil
+		return rsaPub
 	}
 
-	return nil, fmt.Errorf("failed to parse public key: %v", err)
+	panic(fmt.Errorf("failed to parse public key: %v", err))
 }
 
-func RsaLoadPrivateKeyFromString(privateKeyStr string) (*RsaPrivateKey, error) {
+func RsaLoadPrivateKeyFromString(privateKeyStr string) *RsaPrivateKey {
 	block, _ := pem.Decode([]byte(privateKeyStr))
 	if block == nil || block.Type != "RSA PRIVATE KEY" {
-		return nil, fmt.Errorf("failed to decode PEM block containing private key")
+		panic(errors.New("failed to decode PEM block containing private key"))
 	}
 
-	return x509.ParsePKCS1PrivateKey(block.Bytes)
+	pk, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+
+	return pk
 }

@@ -46,51 +46,49 @@ func NewComputeService(
 	}
 }
 
-func (c *ComputeService) Compute(cid string, payerHeader string, computeArgs string) (res *domain.ComputeResponse, ctx *domain.ComputeContext, err error) {
+func (c *ComputeService) Compute(cid string, payerHexAddress string, computeArgs string) (res *domain.ComputeResponse, ctx *domain.ComputeContext, err error) {
+	// download specification
 	artifact, err := c.ArtifactService.GetArtifactSpecification(cid, c.ProviderRsaPrivateKey)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	// extract payer from header or deployment to owner
-	var payerAddress common.Address
-	if payerHeader != "" {
-		// TODO: extract signer from signature and verify it (Signature has expiration time)
-		panic("Not implemented")
+	// by default payer is owner
+	var payer crypto.EcdsaAddress
+	if payerHexAddress != "" {
+		payer = common.HexToAddress(payerHexAddress)
 	} else {
-		payerAddress = common.HexToAddress(artifact.Owner)
+		payer = common.HexToAddress(artifact.Owner)
 	}
 
 	// check if deployment can be paid and other prechecks before executing the binary
-	allowance, price, err := c.EscrowService.Allowance(payerAddress, *c.ProviderEcdsaAddress)
+	allowance, price, err := c.EscrowService.Allowance(payer, *c.ProviderEcdsaAddress)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 	if allowance.Cmp(price) < 0 {
-		err = errors.New("insufficient funds")
-		return
+		return nil, nil, errors.New("insufficient funds")
 	}
 	if price.Cmp(c.PriceUnit) > 0 {
-		err = errors.New("invalid price")
-		return
+		return nil, nil, errors.New("invalid price")
 	}
 
 	// get deployment executable
 	executableDir, err := c.ArtifactService.GetArtifactExecutable(artifact.DeploymentCid)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
 	// reduce user balance in escrow contract.
-	tx, err := c.EscrowService.Consume(c.ProviderEcdsaPrivateKey, payerAddress, c.PriceUnit)
+	tx, err := c.EscrowService.Consume(c.ProviderEcdsaPrivateKey, payer, c.PriceUnit)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
 	// execute binary and give response
-	res, err = c.ExecuteProgram(executableDir, artifact.Env, computeArgs)
+	res, err = ExecuteProgram(executableDir, artifact.Env, computeArgs)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 	ctx = &domain.ComputeContext{EscrowTransaction: tx}
 
@@ -98,7 +96,7 @@ func (c *ComputeService) Compute(cid string, payerHeader string, computeArgs str
 
 }
 
-func (c *ComputeService) ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*domain.ComputeResponse, error) {
+func ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*domain.ComputeResponse, error) {
 	// Prepare the docker run command
 	args := []string{"run", "--rm", "-v", fmt.Sprintf("%s:/app", deploymentPath)}
 	for _, env := range execEnv {

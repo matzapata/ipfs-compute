@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
 	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
@@ -14,20 +13,23 @@ import (
 type ArtifactService struct {
 	ArtifactRepository domain.IArtifactRepository
 	Unzipper           archive.IUnzipper
+	MaxZippedSize      uint
 }
 
 func NewArtifactService(
 	artifactRepository domain.IArtifactRepository,
 	unzipper archive.IUnzipper,
+	maxZippedSize uint,
 ) *ArtifactService {
 	return &ArtifactService{
 		ArtifactRepository: artifactRepository,
 		Unzipper:           unzipper,
+		MaxZippedSize:      maxZippedSize,
 	}
 }
 
 func (d *ArtifactService) GetArtifactExecutable(cid string) (executablePath string, err error) {
-	zippedExecutablePath, err := d.ArtifactRepository.GetZippedExecutable(cid, config.MAX_ZIPPED_DEPLOYMENT)
+	zippedExecutablePath, err := d.ArtifactRepository.GetZippedExecutable(cid, d.MaxZippedSize)
 	if err != nil {
 		return "", err
 	}

@@ -14,7 +14,7 @@ func ResolveCommand(cfg *config.Config, domain string) error {
 		return err
 	}
 	defer ethClient.Close()
-	registryService := services.NewRegistryService(ethClient, *cfg.RegistryAddress)
+	registryService := services.NewRegistryService(cfg, ethClient)
 
 	// resolve domain
 	providerDomainData, err := registryService.ResolveDomain(domain)

@@ -17,8 +17,8 @@ func ApproveCommand(cfg *config.Config, amount string, price string, providerDom
 	if err != nil {
 		return err
 	}
-	escrowService := services.NewEscrowService(ethClient, *cfg.EscrowAddress, *cfg.UsdcAddress)
-	registryService := services.NewRegistryService(ethClient, *cfg.RegistryAddress)
+	escrowService := services.NewEscrowService(cfg, ethClient)
+	registryService := services.NewRegistryService(cfg, ethClient)
 
 	// resolve domain
 	providerDomainData, err := registryService.ResolveDomain(providerDomain)

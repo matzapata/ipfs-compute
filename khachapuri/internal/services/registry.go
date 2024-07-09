@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/contracts"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
@@ -13,13 +14,14 @@ import (
 )
 
 type RegistryService struct {
+	Config           *config.Config
 	EthClient        *ethclient.Client
 	Registry         domain.IRegistryContract
 	EthAuthenticator eth.IEthAuthenticator
 }
 
-func NewRegistryService(ethClient *ethclient.Client, registryAddress crypto.EcdsaAddress) *RegistryService {
-	registry, err := contracts.NewRegistry(registryAddress, ethClient)
+func NewRegistryService(cfg *config.Config, ethClient *ethclient.Client) *RegistryService {
+	registry, err := contracts.NewRegistry(*cfg.RegistryAddress, ethClient)
 	if err != nil {
 		panic(err)
 	}
@@ -29,6 +31,7 @@ func NewRegistryService(ethClient *ethclient.Client, registryAddress crypto.Ecds
 		EthClient:        ethClient,
 		Registry:         registry,
 		EthAuthenticator: ethAuthenticator,
+		Config:           cfg,
 	}
 }
 

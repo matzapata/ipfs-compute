@@ -1,10 +1,11 @@
 package services
 
 import (
-	"encoding/json"
+	"encoding/base64"
 	"os"
 	"path"
 
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 
 	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
@@ -12,113 +13,132 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
+// run (runs the artifact build (loads artifact (local or remote)) (loads config (local or remote)))
+
 type ArtifactBuilderService struct {
-	SourceService domain.ISourceService
-	ArtifactRepo  domain.IArtifactRepository
-	Zipper        archive.IZipper
+	Config          *config.Config
+	SourceService   domain.ISourceService
+	ArtifactRepo    domain.IArtifactRepository
+	RegistryService domain.IRegistryService
+	Zipper          archive.IZipper
 }
 
 func NewArtifactBuilderService(
+	cfg *config.Config,
 	sourceService domain.ISourceService,
+	registryService domain.IRegistryService,
 	artifactRepository domain.IArtifactRepository,
-	zipper archive.IZipper,
 ) *ArtifactBuilderService {
 	return &ArtifactBuilderService{
-		SourceService: sourceService,
-		ArtifactRepo:  artifactRepository,
-		Zipper:        zipper,
+		Config:          cfg,
+		SourceService:   sourceService,
+		ArtifactRepo:    artifactRepository,
+		Zipper:          archive.NewZipper(),
+		RegistryService: registryService,
 	}
 }
 
-func (as *ArtifactBuilderService) BuildDeploymentZip() (cid string, err error) {
-	// temp folder for the deployment
-	tempDirPath, err := os.MkdirTemp("", "deployment-*")
-	if err != nil {
-		return
+// generates artifact zip in outDir (./build by default)
+func (as *ArtifactBuilderService) BuildArtifact(outDir string) error {
+	if outDir == "" {
+		outDir = "./build"
 	}
-	deploymentDirPath := path.Join(tempDirPath, "deployment")
+
+	// check if folder exists
+	if _, err := os.Stat(outDir); os.IsNotExist(err) {
+		err := os.Mkdir(outDir, 0755)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else {
+		// remove all files in the folder
+		err := os.RemoveAll(outDir)
+		if err != nil {
+			return err
+		}
+		err = os.Mkdir(outDir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	// temp folder for the deployment
+	deploymentDirPath := path.Join(outDir, "artifact")
 	deploymentBinPath := path.Join(deploymentDirPath, "main")
 	deploymentPublicPath := path.Join(deploymentDirPath, "public")
-	deploymentZipPath := path.Join(tempDirPath, "deployment.zip")
-	defer os.RemoveAll(tempDirPath)
+	deploymentZipPath := path.Join(outDir, "artifact.zip")
+	defer os.RemoveAll(deploymentDirPath)
 
 	// get source files
 	sources, err := as.SourceService.GetSource()
 	if err != nil {
-		return
+		return err
 	}
 
 	// copy binary and public folder to dist folder
 	err = os.Mkdir(deploymentDirPath, 0755)
 	if err != nil {
-		return
+		return err
 	}
 	err = cp.Copy(sources.ExecutablePath, deploymentBinPath)
 	if err != nil {
-		return
+		return err
 	}
 	err = cp.Copy(sources.AssetsPath, deploymentPublicPath)
 	if err != nil {
-		return
+		return err
 	}
 
 	// zip dist folder
 	err = as.Zipper.ZipFolder(deploymentDirPath, deploymentZipPath)
 	if err != nil {
-		return
+		return err
 	}
 
-	// store zipped deployment
-	cid, err = as.ArtifactRepo.CreateZippedExecutable(deploymentZipPath)
-	if err != nil {
-		return
-	}
-
-	return cid, nil
+	return nil
 }
 
-func (as *ArtifactBuilderService) BuildDeploymentSpecification(
-	executableCid string,
-	signature *crypto.EcdsaSignature,
-	providerPublicKey *crypto.RsaPublicKey,
-) (cid string, err error) {
+func (as *ArtifactBuilderService) PublishArtifact(artPath string, adminSignature *crypto.EcdsaSignature, providerDomain string) (string, error) {
 	sourceSpec, err := as.SourceService.GetSourceSpecification()
 	if err != nil {
-		return
+		return "", err
 	}
 
-	// encrypt it with public key
-	deploymentJson, err := json.Marshal(domain.Artifact{
-		Env:            sourceSpec.Env,
-		Owner:          signature.Address,
-		OwnerSignature: signature.Signature,
-		DeploymentCid:  executableCid,
-	})
+	// resolve domain
+	provider, err := as.RegistryService.ResolveDomain(providerDomain)
 	if err != nil {
-		return
-	}
-	encDeploymentJson, err := crypto.RsaEncryptBytes(providerPublicKey, deploymentJson)
-	if err != nil {
-		return
+		return "", err
 	}
 
-	// create temp file for the spec file
-	distSpecFile, err := os.CreateTemp("", "spec-*.json")
-	if err != nil {
-		return
+	// encrypt env vars if any
+	var envVars string
+	for _, s := range sourceSpec.Env {
+		envVars += s
 	}
-	distSpecFilePath := distSpecFile.Name()
-
-	// save and store it
-	err = os.WriteFile(distSpecFilePath, encDeploymentJson, 0644)
+	encEnvVars, err := crypto.RsaEncryptBytes(
+		crypto.RsaLoadPublicKeyFromString(provider.RsaPublicKey),
+		[]byte(envVars),
+	)
 	if err != nil {
-		return
-	}
-	defer os.Remove(distSpecFilePath)
-	cid, err = as.ArtifactRepo.CreateSpecificationFile(distSpecFilePath)
-	if err != nil {
-		return
+		return "", nil
 	}
 
-	return cid, nil
+	// assemble artifact specification
+	artSpec := domain.ArtifactSpec{
+		Env:            base64.StdEncoding.EncodeToString(encEnvVars),
+		Owner:          adminSignature.Address,
+		OwnerSignature: adminSignature.Signature,
+	}
+
+	// publish artifact and update specification with cid
+	artifactCid, err := as.ArtifactRepo.PublishArtifact(artPath)
+	if err != nil {
+		return "", err
+	}
+	artSpec.ArtifactCid = artifactCid
+
+	// publish specification
+	return as.ArtifactRepo.PublishArtifactSpecification(&artSpec)
 }

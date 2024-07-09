@@ -150,4 +150,4 @@ TODO: add to contract trial credits giveaway. Users cannot withdraw, neither pro
 TODO: reputation system
 TODO: Timeout docker running 15 secs or so
 TODO: Allow unencrypted deployments, anybody can run. Cool also if there can be more than one runner
-
+TODO: option to encrypt deployment at rest

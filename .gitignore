@@ -3,3 +3,5 @@
 temp
 keys.pem
 build
+.env.local
+.khachapuri

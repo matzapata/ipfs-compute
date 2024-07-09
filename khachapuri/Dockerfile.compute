@@ -1,5 +1,0 @@
-FROM alpine:latest
-
-WORKDIR /app
-
-CMD ["/app/main"]

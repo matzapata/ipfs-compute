@@ -2,21 +2,21 @@ package domain
 
 import "crypto/rsa"
 
-type Artifact struct {
-	Env            []string `json:"env"`
-	Owner          string   `json:"owner"`
-	OwnerSignature string   `json:"owner_signature"`
-	DeploymentCid  string   `json:"deployment_cid"`
+type ArtifactSpec struct {
+	Env            string `json:"env"` // encrypted env vars
+	Owner          string `json:"owner"`
+	OwnerSignature string `json:"owner_signature"`
+	ArtifactCid    string `json:"artifact_cid"`
 }
 
 type IArtifactService interface {
-	GetArtifactExecutable(cid string) (executablePath string, err error)
-	GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*Artifact, error)
+	GetArtifact(cid string) (artifactPath string, err error)
+	GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*ArtifactSpec, error)
 }
 
 type IArtifactRepository interface {
 	GetZippedExecutable(cid string, maxSize uint) (zipPath string, err error)
 	GetSpecificationFile(cid string) (specPath string, err error)
-	CreateZippedExecutable(zipPath string) (cid string, err error)
-	CreateSpecificationFile(specPath string) (cid string, err error)
+	PublishArtifact(artPath string) (cid string, err error)
+	PublishArtifactSpecification(spec *ArtifactSpec) (cid string, err error)
 }

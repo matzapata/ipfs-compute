@@ -4,41 +4,50 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
 	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 )
 
 type ArtifactService struct {
+	Config             *config.Config
 	ArtifactRepository domain.IArtifactRepository
 	Unzipper           archive.IUnzipper
-	MaxZippedSize      uint
 }
 
 func NewArtifactService(
+	cfg *config.Config,
 	artifactRepository domain.IArtifactRepository,
-	unzipper archive.IUnzipper,
-	maxZippedSize uint,
 ) *ArtifactService {
 	return &ArtifactService{
+		Config:             cfg,
 		ArtifactRepository: artifactRepository,
-		Unzipper:           unzipper,
-		MaxZippedSize:      maxZippedSize,
+		Unzipper:           archive.NewUnzipper(),
 	}
 }
 
-func (d *ArtifactService) GetArtifactExecutable(cid string) (executablePath string, err error) {
-	zippedExecutablePath, err := d.ArtifactRepository.GetZippedExecutable(cid, d.MaxZippedSize)
+func (d *ArtifactService) GetArtifact(cid string) (executablePath string, err error) {
+	zippedExecutablePath, err := d.ArtifactRepository.GetZippedExecutable(cid, d.Config.ArtifactMaxSize)
 	if err != nil {
 		return "", err
 	}
 	defer os.Remove(zippedExecutablePath)
 
-	return d.Unzipper.Unzip(zippedExecutablePath)
+	dir, err := os.MkdirTemp("", "khachapuri")
+	if err != nil {
+		return "", err
+	}
+	if err = d.Unzipper.Unzip(zippedExecutablePath, dir); err != nil {
+		return "", err
+	}
+
+	return path.Join(dir, "main"), nil
 }
 
-func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *crypto.RsaPrivateKey) (*domain.Artifact, error) {
+func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *crypto.RsaPrivateKey) (*domain.ArtifactSpec, error) {
 	encSpecPath, err := d.ArtifactRepository.GetSpecificationFile(cid)
 	if err != nil {
 		return nil, err
@@ -55,9 +64,8 @@ func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivat
 	}
 
 	// unmarshal the JSON data
-	var artifact domain.Artifact
-	err = json.Unmarshal(artifactSpecification, &artifact)
-	if err != nil {
+	var artifact domain.ArtifactSpec
+	if err = json.Unmarshal(artifactSpecification, &artifact); err != nil {
 		return nil, fmt.Errorf("error unmarshalling metadata json: %v", err)
 	}
 

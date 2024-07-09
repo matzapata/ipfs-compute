@@ -18,9 +18,9 @@ func (m *MockArtifactService) GetArtifactExecutable(cid string) (executablePath 
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*domain.Artifact, error) {
+func (m *MockArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*domain.ArtifactSpec, error) {
 	args := m.Called(cid, providerRsaPrivateKey)
-	return args.Get(0).(*domain.Artifact), args.Error(1)
+	return args.Get(0).(*domain.ArtifactSpec), args.Error(1)
 }
 
 // mock repository ========================================

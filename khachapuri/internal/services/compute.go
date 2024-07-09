@@ -1,57 +1,42 @@
 package services
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"math/big"
-	"os/exec"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
 )
 
 type ComputeService struct {
-	ArtifactService         domain.IArtifactService
-	EscrowService           domain.IEscrowService
-	ProviderEcdsaPrivateKey *crypto.EcdsaPrivateKey
-	ProviderEcdsaAddress    *crypto.EcdsaAddress
-	ProviderRsaPrivateKey   *crypto.RsaPrivateKey
-	ProviderRsaPublicKey    *crypto.RsaPublicKey
-	PriceUnit               *big.Int
+	Config          *config.Config
+	ArtifactService domain.IArtifactService
+	EscrowService   domain.IEscrowService
+	ComputeExecutor domain.IComputeExecutor
 }
 
 func NewComputeService(
-	// Services
+	cfg *config.Config,
 	artifactService domain.IArtifactService,
 	escrowService domain.IEscrowService,
-
-	// Config
-	providerEcdsaPrivateKey *crypto.EcdsaPrivateKey,
-	providerEcdsaAddress *crypto.EcdsaAddress,
-	providerRsaPrivateKey *crypto.RsaPrivateKey,
-	providerRsaPublicKey *crypto.RsaPublicKey,
-	priceUnit *big.Int,
+	computeExecutor domain.IComputeExecutor,
 ) *ComputeService {
 	return &ComputeService{
-		ArtifactService:         artifactService,
-		EscrowService:           escrowService,
-		ProviderRsaPrivateKey:   providerRsaPrivateKey,
-		ProviderRsaPublicKey:    providerRsaPublicKey,
-		ProviderEcdsaPrivateKey: providerEcdsaPrivateKey,
-		ProviderEcdsaAddress:    providerEcdsaAddress,
-		PriceUnit:               priceUnit,
+		ArtifactService: artifactService,
+		EscrowService:   escrowService,
+		Config:          cfg,
+		ComputeExecutor: computeExecutor,
 	}
 }
 
-func (c *ComputeService) Compute(cid string, payerHexAddress string, computeArgs string) (res *domain.ComputeResponse, ctx *domain.ComputeContext, err error) {
+func (c *ComputeService) Compute(specCid string, payerHexAddress string, computeArgs string) (res *domain.ComputeResponse, ctx *domain.ComputeContext, err error) {
 	// download specification
-	artifact, err := c.ArtifactService.GetArtifactSpecification(cid, c.ProviderRsaPrivateKey)
+	artifact, err := c.ArtifactService.GetArtifactSpecification(specCid, c.Config.ProviderRsaPrivateKey)
 	if err != nil {
 		return nil, nil, err
 	}
+	// TODO: decrypt env vars
 
 	// by default payer is owner
 	var payer crypto.EcdsaAddress
@@ -61,32 +46,33 @@ func (c *ComputeService) Compute(cid string, payerHexAddress string, computeArgs
 		payer = common.HexToAddress(artifact.Owner)
 	}
 
-	// check if deployment can be paid and other prechecks before executing the binary
-	allowance, price, err := c.EscrowService.Allowance(payer, *c.ProviderEcdsaAddress)
+	// check if deployment can be paid and other pre-checks before executing the binary
+	allowance, price, err := c.EscrowService.Allowance(payer, *c.Config.ProviderEcdsaAddress)
 	if err != nil {
 		return nil, nil, err
 	}
 	if allowance.Cmp(price) < 0 {
 		return nil, nil, errors.New("insufficient funds")
 	}
-	if price.Cmp(c.PriceUnit) > 0 {
+	if price.Cmp(c.Config.ProviderComputeUnitPrice) > 0 {
 		return nil, nil, errors.New("invalid price")
 	}
 
 	// get deployment executable
-	executableDir, err := c.ArtifactService.GetArtifactExecutable(artifact.DeploymentCid)
+	executableDir, err := c.ArtifactService.GetArtifact(artifact.ArtifactCid)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// reduce user balance in escrow contract.
-	tx, err := c.EscrowService.Consume(c.ProviderEcdsaPrivateKey, payer, c.PriceUnit)
+	tx, err := c.EscrowService.Consume(c.Config.ProviderEcdsaPrivateKey, payer, c.Config.ProviderComputeUnitPrice)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// execute binary and give response
-	res, err = ExecuteProgram(executableDir, artifact.Env, computeArgs)
+	execEnv := []string{}
+	res, err = c.ComputeExecutor.Execute(executableDir, execEnv, computeArgs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -94,34 +80,4 @@ func (c *ComputeService) Compute(cid string, payerHexAddress string, computeArgs
 
 	return res, ctx, nil
 
-}
-
-func ExecuteProgram(deploymentPath string, execEnv []string, execArgs string) (*domain.ComputeResponse, error) {
-	// Prepare the docker run command
-	args := []string{"run", "--rm", "-v", fmt.Sprintf("%s:/app", deploymentPath)}
-	for _, env := range execEnv {
-		args = append(args, "-e", env)
-	}
-	args = append(args, "binary_runner", "main") // binary_runner is the name of the docker image
-	args = append(args, execArgs)
-
-	// run the binary inside the docker container
-	cmd := exec.Command("docker", args...)
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		return nil, fmt.Errorf("execution error: %v, stderr: %v", err, stderr.String())
-	}
-
-	var response domain.ComputeResponse
-	err = json.Unmarshal(out.Bytes(), &response)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse output: %v", err)
-	}
-
-	return &response, nil
 }

@@ -16,7 +16,6 @@ type ApiHandler struct {
 }
 
 func NewApiHandler(cfg *config.Config) (*ApiHandler, error) {
-
 	// create eth client
 	ethClient, err := ethclient.Dial(cfg.EthRpc)
 	if err != nil {
@@ -24,7 +23,7 @@ func NewApiHandler(cfg *config.Config) (*ApiHandler, error) {
 	}
 
 	// create registry service
-	registryService := services.NewRegistryService(ethClient, *cfg.RegistryAddress)
+	registryService := services.NewRegistryService(cfg, ethClient)
 
 	// create router
 	router := chi.NewRouter()

@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/contracts"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	"github.com/matzapata/ipfs-compute/provider/pkg/crypto"
@@ -11,24 +12,22 @@ import (
 )
 
 type EscrowService struct {
+	Config            *config.Config
 	Escrow            domain.IEscrowContract
-	EscrowAddress     crypto.EcdsaAddress
 	Erc               domain.IErcAllowance
-	ErcAddress        crypto.EcdsaAddress
 	Authenticator     eth.IEthAuthenticator
 	TransactionWaiter eth.ITransactionWaiter
 }
 
 func NewEscrowService(
+	cfg *config.Config,
 	ethClient *ethclient.Client,
-	escrowAddress crypto.EcdsaAddress,
-	ercAddress crypto.EcdsaAddress,
 ) *EscrowService {
-	ercContract, err := contracts.NewErc(ercAddress, ethClient)
+	ercContract, err := contracts.NewErc(*cfg.UsdcAddress, ethClient)
 	if err != nil {
 		panic(err)
 	}
-	escrowContract, err := contracts.NewEscrow(escrowAddress, ethClient)
+	escrowContract, err := contracts.NewEscrow(*cfg.EscrowAddress, ethClient)
 	if err != nil {
 		panic(err)
 	}
@@ -36,10 +35,9 @@ func NewEscrowService(
 	transactionWaiter := eth.NewTransactionWaiter(ethClient)
 
 	return &EscrowService{
+		Config:            cfg,
 		Escrow:            escrowContract,
-		EscrowAddress:     escrowAddress,
 		Erc:               ercContract,
-		ErcAddress:        ercAddress,
 		Authenticator:     ethAuthenticator,
 		TransactionWaiter: transactionWaiter,
 	}
@@ -54,7 +52,6 @@ func (s *EscrowService) Consume(providerPrivateKey *crypto.EcdsaPrivateKey, user
 
 	// Consume credit from the user
 	tx, err := s.Escrow.Consume(auth, userAddress, priceUnit)
-
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +65,7 @@ func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount *big.
 	address := crypto.EcdsaPrivateKeyToAddress(privateKey)
 
 	// check if the user has approved the escrow contract to spend USDC
-	allowance, err := s.Erc.Allowance(nil, *address, s.EscrowAddress)
+	allowance, err := s.Erc.Allowance(nil, *address, *s.Config.EscrowAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +77,7 @@ func (s *EscrowService) Deposit(privateKey *crypto.EcdsaPrivateKey, amount *big.
 			return nil, err
 		}
 
-		tx, err := s.Erc.Approve(auth, s.EscrowAddress, amount)
+		tx, err := s.Erc.Approve(auth, *s.Config.EscrowAddress, amount)
 		if err != nil {
 			return nil, err
 		}

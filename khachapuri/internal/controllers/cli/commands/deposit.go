@@ -20,7 +20,7 @@ func DepositCommand(cfg *config.Config, amount string, adminPrivateKey string) e
 		return err
 	}
 	defer ethClient.Close()
-	escrowService := services.NewEscrowService(ethClient, *cfg.EscrowAddress, *cfg.UsdcAddress)
+	escrowService := services.NewEscrowService(cfg, ethClient)
 
 	// confirm with the user
 	prompt := fmt.Sprintf("You are about to deposit %s USDC into the escrow account. Continue? (y/n): ", amount)

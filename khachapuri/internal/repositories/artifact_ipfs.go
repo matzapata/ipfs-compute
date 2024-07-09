@@ -2,12 +2,14 @@ package repositories
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 
+	"github.com/matzapata/ipfs-compute/provider/internal/domain"
 	"github.com/wabarc/ipfs-pinner/pkg/pinata"
 )
 
@@ -61,12 +63,29 @@ func (dt *IpfsArtifactRepository) GetSpecificationFile(cid string) (specPath str
 	return specTempPath.Name(), nil
 }
 
-func (dt *IpfsArtifactRepository) CreateZippedExecutable(zipPath string) (cid string, err error) {
-	return dt.Pinata.PinFile(zipPath)
+func (dt *IpfsArtifactRepository) PublishArtifact(artPath string) (cid string, err error) {
+	return dt.Pinata.PinFile(artPath)
 }
 
-func (dt *IpfsArtifactRepository) CreateSpecificationFile(specPath string) (cid string, err error) {
-	return dt.Pinata.PinFile(specPath)
+func (dt *IpfsArtifactRepository) PublishArtifactSpecification(spec *domain.ArtifactSpec) (cid string, err error) {
+	specFile, err := os.CreateTemp("", "artspec-*.json")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(specFile.Name())
+
+	specBytes, err := json.Marshal(spec)
+	if err != nil {
+		return "", err
+	}
+
+	// save and store it
+	err = os.WriteFile(specFile.Name(), specBytes, 0644)
+	if err != nil {
+		return "", err
+	}
+
+	return dt.Pinata.PinFile(specFile.Name())
 }
 
 func downloadFile(gateway string, cid string, maxSize int64) ([]byte, error) {

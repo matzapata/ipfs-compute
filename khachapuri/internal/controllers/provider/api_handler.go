@@ -10,7 +10,6 @@ import (
 	"github.com/matzapata/ipfs-compute/provider/internal/controllers/provider/routers"
 	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
-	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
 )
 
 type ApiHandler struct {
@@ -32,17 +31,14 @@ func NewApiHandler(cfg *config.Config) (*ApiHandler, error) {
 	)
 
 	// core services
-	unzipper := archive.NewUnzipper()
-	artifactsService := services.NewArtifactService(artifactRepository, unzipper, cfg.ArtifactMaxSize)
-	escrowService := services.NewEscrowService(ethClient, *cfg.EscrowAddress, *cfg.UsdcAddress)
+	artifactsService := services.NewArtifactService(cfg, artifactRepository)
+	escrowService := services.NewEscrowService(cfg, ethClient)
+	computeExecutor := services.NewComputeExecutor(cfg)
 	computeService := services.NewComputeService(
+		cfg,
 		artifactsService,
 		escrowService,
-		cfg.ProviderEcdsaPrivateKey,
-		cfg.ProviderEcdsaAddress,
-		cfg.ProviderRsaPrivateKey,
-		cfg.ProviderRsaPublicKey,
-		cfg.ProviderComputeUnitPrice,
+		computeExecutor,
 	)
 
 	// router

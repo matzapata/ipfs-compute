@@ -70,8 +70,12 @@ func (e *EnvLoader) LoadBool(key string, panicOnMissing bool) bool {
 
 func (e *EnvLoader) LoadBigInt(key string, panicOnMissing bool) *big.Int {
 	val := os.Getenv(key)
-	if val == "" && panicOnMissing {
-		panic("missing env var: " + key)
+	if val == "" {
+		if panicOnMissing {
+			panic("missing env var: " + key)
+		} else {
+			return nil
+		}
 	}
 
 	bigInt := new(big.Int)
@@ -85,8 +89,12 @@ func (e *EnvLoader) LoadBigInt(key string, panicOnMissing bool) *big.Int {
 
 func (e *EnvLoader) LoadEcdsaAddress(key string, panicOnMissing bool) *crypto.EcdsaAddress {
 	val := os.Getenv(key)
-	if val == "" && panicOnMissing {
-		panic("missing env var: " + key)
+	if val == "" {
+		if panicOnMissing {
+			panic("missing env var: " + key)
+		} else {
+			return nil
+		}
 	}
 
 	return crypto.EcdsaHexToAddress(val)
@@ -94,8 +102,12 @@ func (e *EnvLoader) LoadEcdsaAddress(key string, panicOnMissing bool) *crypto.Ec
 
 func (e *EnvLoader) LoadEcdsaPrivateKey(key string, panicOnMissing bool) *crypto.EcdsaPrivateKey {
 	val := os.Getenv(key)
-	if val == "" && panicOnMissing {
-		panic("missing env var: " + key)
+	if val == "" {
+		if panicOnMissing {
+			panic("missing env var: " + key)
+		} else {
+			return nil
+		}
 	}
 
 	return crypto.EcdsaHexToPrivateKey(val)
@@ -103,8 +115,12 @@ func (e *EnvLoader) LoadEcdsaPrivateKey(key string, panicOnMissing bool) *crypto
 
 func (e *EnvLoader) LoadRsaPrivateKey(key string, panicOnMissing bool) *crypto.RsaPrivateKey {
 	val := os.Getenv(key)
-	if val == "" && panicOnMissing {
-		panic("missing env var: " + key)
+	if val == "" {
+		if panicOnMissing {
+			panic("missing env var: " + key)
+		} else {
+			return nil
+		}
 	}
 
 	return crypto.RsaLoadPrivateKeyFromString(val)
@@ -112,8 +128,12 @@ func (e *EnvLoader) LoadRsaPrivateKey(key string, panicOnMissing bool) *crypto.R
 
 func (e *EnvLoader) LoadRsaPublicKey(key string, panicOnMissing bool) *crypto.RsaPublicKey {
 	val := os.Getenv(key)
-	if val == "" && panicOnMissing {
-		panic("missing env var: " + key)
+	if val == "" {
+		if panicOnMissing {
+			panic("missing env var: " + key)
+		} else {
+			return nil
+		}
 	}
 
 	return crypto.RsaLoadPublicKeyFromString(val)

@@ -17,7 +17,7 @@ func RegisterProvider(cfg *config.Config, domain string, resolverAddress string,
 		return err
 	}
 	defer ethClient.Close()
-	registryService := services.NewRegistryService(ethClient, *cfg.RegistryAddress)
+	registryService := services.NewRegistryService(cfg, ethClient)
 
 	// recover the private key
 	privateKey := crypto.EcdsaHexToPrivateKey(adminPrivateKey)

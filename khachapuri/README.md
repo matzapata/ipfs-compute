@@ -7,6 +7,15 @@
 
 `make cli-install`
 
+setup `.env` or globally define variables with:
+
+```
+ETH_RPC=""
+IPFS_GATEWAY=""
+IPFS_PINATA_APIKEY=""
+IPFS_PINATA_SECRET=""
+```
+
 ## Commands
 
 ### allowance

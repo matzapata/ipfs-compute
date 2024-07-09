@@ -18,7 +18,7 @@ func WithdrawCommand(cfg *config.Config, amount string, adminPrivateKey string) 
 		return err
 	}
 	defer ethClient.Close()
-	escrowService := services.NewEscrowService(ethClient, *cfg.EscrowAddress, *cfg.UsdcAddress)
+	escrowService := services.NewEscrowService(cfg, ethClient)
 
 	// parse user input
 	privateKey := crypto.EcdsaHexToPrivateKey(adminPrivateKey)

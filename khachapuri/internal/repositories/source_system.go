@@ -24,6 +24,8 @@ func (r *SystemSourceRepository) GetSource() (*domain.Source, error) {
 }
 
 func (r *SystemSourceRepository) GetSourceSpecification() (*domain.SourceSpecification, error) {
+	// TODO: load with viper config, load .env
+
 	source, err := r.GetSource()
 	if err != nil {
 		return nil, err

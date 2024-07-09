@@ -15,7 +15,7 @@ func BalanceCommand(cfg *config.Config, address string) error {
 		return err
 	}
 	defer ethClient.Close()
-	escrowService := services.NewEscrowService(ethClient, *cfg.EscrowAddress, *cfg.UsdcAddress)
+	escrowService := services.NewEscrowService(cfg, ethClient)
 
 	// get balance
 	balance, err := escrowService.Balance(common.HexToAddress(address))

@@ -20,22 +20,20 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 		Short: "Create and manage kachapuri deployments",
 	}
 
-	// Define the deploy command
 	deployCmd := &cobra.Command{
-		Use:   "deploy --pk <admin private key>",
-		Short: "Deploy a new application to kachapuri",
+		Use:   "publish --pk <admin private key>",
+		Short: "Publish artifact to ipfs making it available for consumption",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			adminPrivateKey, _ := cmd.Flags().GetString("private-key")
 
-			err := commands.DeployCommand(cfg, adminPrivateKey)
+			err := commands.PublishCommand(cfg, adminPrivateKey)
 			handleError(err)
 		},
 	}
 	deployCmd.Flags().StringP("pk", "", "", "admin wallet private key")
 	deployCmd.MarkFlagRequired("pk")
 
-	// Allowance command
 	allowanceCommand := &cobra.Command{
 		Use:   "allowance [provider-domain] --a <admin-address>",
 		Short: "Get the current allowance of the user to consume from the provider",
@@ -51,7 +49,6 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 	allowanceCommand.Flags().StringP("a", "k", "", "admin wallet address")
 	allowanceCommand.MarkFlagRequired("a")
 
-	// Approve command
 	approveCommand := &cobra.Command{
 		Use:   "approve [provider-domain] [amount] [price] --pk <admin-pk>",
 		Short: "Approve the provider to consume USDC from the user's account",
@@ -128,9 +125,28 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 		},
 	}
 
+	buildCmd := &cobra.Command{
+		Use:   "build",
+		Short: "Build the artifact",
+		Args:  cobra.ExactArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			err := commands.BuildCommand(cfg)
+			handleError(err)
+		},
+	}
+
+	runCmd := &cobra.Command{
+		Use:   "run",
+		Short: "Run the local build",
+		Args:  cobra.ExactArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			err := commands.RunCommand(cfg)
+			handleError(err)
+		},
+	}
+
 	// TODO: command to deploy resolver and register it
-	// TODO: build command
-	// TODO: compute command (reads from local build) (local testing)
+	// TODO: publish command (publish build to ipfs)
 	// TODO: set global config
 
 	// Add the commands to the root command
@@ -142,6 +158,8 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 		balanceCommand,
 		depositCommand,
 		withdrawCommand,
+		buildCmd,
+		runCmd,
 	)
 
 	return &CliHandler{

@@ -9,7 +9,7 @@ import (
 )
 
 type IUnzipper interface {
-	Unzip(zipPath string) (string, error)
+	Unzip(zipPath string, dest string) error
 }
 
 type Unzipper struct {
@@ -19,20 +19,16 @@ func NewUnzipper() *Unzipper {
 	return &Unzipper{}
 }
 
-func (z *Unzipper) Unzip(zipPath string) (string, error) {
-	dest, err := os.CreateTemp("", "*")
-	if err != nil {
-		return "", err
-	}
+func (z *Unzipper) Unzip(zipPath string, dest string) error {
 
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to open zip file: %w", err)
+		return fmt.Errorf("failed to open zip file: %w", err)
 	}
 	defer r.Close()
 
 	for _, f := range r.File {
-		fpath := filepath.Join(dest.Name(), f.Name)
+		fpath := filepath.Join(dest, f.Name)
 
 		// Create directory structure if necessary
 		if f.FileInfo().IsDir() {
@@ -42,17 +38,17 @@ func (z *Unzipper) Unzip(zipPath string) (string, error) {
 
 		// Create a file in the destination directory
 		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return "", err
+			return err
 		}
 
 		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return "", err
+			return err
 		}
 
 		rc, err := f.Open()
 		if err != nil {
-			return "", err
+			return err
 		}
 
 		_, err = io.Copy(outFile, rc)
@@ -61,8 +57,9 @@ func (z *Unzipper) Unzip(zipPath string) (string, error) {
 		rc.Close()
 
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
-	return dest.Name(), nil
+
+	return nil
 }

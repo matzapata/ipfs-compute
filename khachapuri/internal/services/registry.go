@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -68,7 +69,7 @@ func (r *RegistryService) ResolveDomain(domainName string) (*domain.ProviderDoma
 
 	return &domain.ProviderDomainData{
 		EcdsaAddress:   ecdsaAddress.Hex(),
-		RsaPublicKey:   rsaPublicKey,
+		RsaPublicKey:   strings.ReplaceAll(rsaPublicKey, "\\n", "\n"),
 		ServerEndpoint: server,
 	}, nil
 }

@@ -3,6 +3,7 @@ package cli_controller
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/controllers/cli/commands"
@@ -14,25 +15,10 @@ type CliHandler struct {
 }
 
 func NewCliHandler(cfg *config.Config) *CliHandler {
-	// Define the root command
 	rootCmd := &cobra.Command{
 		Use:   "khachapuri",
 		Short: "Create and manage kachapuri deployments",
 	}
-
-	deployCmd := &cobra.Command{
-		Use:   "publish --pk <admin private key>",
-		Short: "Publish artifact to ipfs making it available for consumption",
-		Args:  cobra.ExactArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			adminPrivateKey, _ := cmd.Flags().GetString("private-key")
-
-			err := commands.PublishCommand(cfg, adminPrivateKey)
-			handleError(err)
-		},
-	}
-	deployCmd.Flags().StringP("pk", "", "", "admin wallet private key")
-	deployCmd.MarkFlagRequired("pk")
 
 	allowanceCommand := &cobra.Command{
 		Use:   "allowance [provider-domain] --a <admin-address>",
@@ -66,7 +52,6 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 	approveCommand.Flags().StringP("pk", "k", "", "admin wallet private key")
 	approveCommand.MarkFlagRequired("pk")
 
-	// Balance command
 	balanceCommand := &cobra.Command{
 		Use:   "balance --a <address>",
 		Short: "Get the current balance of the user in the escrow account",
@@ -81,7 +66,6 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 	balanceCommand.Flags().StringP("a", "k", "", "admin wallet address")
 	balanceCommand.MarkFlagRequired("a")
 
-	// Deposit command
 	depositCommand := &cobra.Command{
 		Use:   "deposit [amount] --pk <private key>",
 		Short: "Deposit funds into the escrow account",
@@ -97,7 +81,6 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 	depositCommand.Flags().StringP("pk", "", "", "admin wallet private key")
 	depositCommand.MarkFlagRequired("pk")
 
-	// Withdraw command
 	withdrawCommand := &cobra.Command{
 		Use:   "withdraw [amount] --pk <private key>",
 		Short: "Withdraw funds from the escrow account",
@@ -112,7 +95,6 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 	}
 	withdrawCommand.Flags().StringP("pk", "", "", "admin wallet private key")
 
-	// Resolve domain command
 	resolveCmd := &cobra.Command{
 		Use:   "resolve [domain]",
 		Short: "Resolve a domain to get the provider",
@@ -126,34 +108,56 @@ func NewCliHandler(cfg *config.Config) *CliHandler {
 	}
 
 	buildCmd := &cobra.Command{
-		Use:   "build",
+		Use:   "build [service]",
 		Short: "Build the artifact",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			err := commands.BuildCommand(cfg)
+			serviceName := args[0]
+
+			err := commands.BuildCommand(cfg, serviceName)
 			handleError(err)
 		},
 	}
 
 	runCmd := &cobra.Command{
-		Use:   "run",
-		Short: "Run the local build",
-		Args:  cobra.ExactArgs(0),
+		Use:                "run [service] ...args",
+		Short:              "Run the local build",
+		Args:               cobra.MinimumNArgs(1),
+		DisableFlagParsing: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			err := commands.RunCommand(cfg)
+			serviceName := args[0]
+			serviceArgs := args[1:]
+			fmt.Println("Running", serviceName, "with args", strings.Join(serviceArgs, " "))
+
+			err := commands.RunCommand(cfg, serviceName, strings.Join(serviceArgs, " "))
 			handleError(err)
 		},
 	}
 
+	publishCmd := &cobra.Command{
+		Use:   "publish [service] [provider] --pk <admin private key>",
+		Short: "Publish artifact to ipfs making it available for consumption",
+		Args:  cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			service := args[0]
+			provider := args[1]
+			adminPrivateKey, _ := cmd.Flags().GetString("pk")
+
+			err := commands.PublishCommand(cfg, service, provider, adminPrivateKey)
+			handleError(err)
+		},
+	}
+	publishCmd.Flags().StringP("pk", "", "", "admin wallet private key")
+	publishCmd.MarkFlagRequired("pk")
+
 	// TODO: command to deploy resolver and register it
-	// TODO: publish command (publish build to ipfs)
 	// TODO: set global config
 
 	// Add the commands to the root command
 	rootCmd.AddCommand(
 		allowanceCommand,
 		approveCommand,
-		deployCmd,
+		publishCmd,
 		resolveCmd,
 		balanceCommand,
 		depositCommand,

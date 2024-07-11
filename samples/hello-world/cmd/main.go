@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type ComputeResponse struct {
@@ -14,7 +15,7 @@ type ComputeResponse struct {
 
 func main() {
 	response := ComputeResponse{
-		Data:   fmt.Sprintf("Hello, %v!", os.Getenv("NAME")),
+		Data:   fmt.Sprintf("Hello, %v! Your request was: %v", os.Getenv("NAME"), strings.Join(os.Args[1:], " ")),
 		Status: 200,
 		Headers: map[string]string{
 			"Content-Type": "application/json",

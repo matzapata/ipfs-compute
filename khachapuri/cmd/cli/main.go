@@ -1,26 +1,21 @@
 package main
 
 import (
-	"log"
-
 	"github.com/joho/godotenv"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	cli_controller "github.com/matzapata/ipfs-compute/provider/internal/controllers/cli"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	godotenv.Load() // ignore errors, it's fine if there's no .env file. We check for missing env vars later.
 
-	// viperLoader := config.NewViperLoader(".")
 	envLoader := config.NewEnvLoader()
 	cfg := config.Config{
 		RegistryAddress: config.RegistryAddress,
 		EscrowAddress:   config.EscrowAddress,
 		UsdcAddress:     config.UsdcAddress,
 		ArtifactMaxSize: config.ArtifactMaxSize,
+		BuildDir:        ".khachapuri",
 
 		EthRpc:                   envLoader.LoadString("ETH_RPC", true),
 		IpfsGateway:              envLoader.LoadString("IPFS_GATEWAY", true),

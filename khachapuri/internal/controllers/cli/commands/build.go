@@ -10,7 +10,7 @@ import (
 	"github.com/matzapata/ipfs-compute/provider/internal/services"
 )
 
-func BuildCommand(cfg *config.Config) error {
+func BuildCommand(cfg *config.Config, serviceName string) error {
 	ethClient, err := ethclient.Dial(cfg.EthRpc)
 	if err != nil {
 		return err
@@ -23,7 +23,7 @@ func BuildCommand(cfg *config.Config) error {
 	artifactBuilder := services.NewArtifactBuilderService(cfg, sourceService, registryService, artifactRepo)
 
 	startTime := time.Now()
-	err = artifactBuilder.BuildArtifact(".khachapuri")
+	err = artifactBuilder.BuildArtifact(serviceName)
 	if err != nil {
 		return err
 	}

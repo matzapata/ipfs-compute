@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/joho/godotenv"
@@ -12,20 +13,22 @@ import (
 	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
 )
 
-func RunCommand(config *config.Config) error {
+func RunCommand(config *config.Config, serviceName string, execArgs string) error {
 	unzipper := archive.NewUnzipper()
 	computeExecutor := services.NewComputeExecutor(nil)
 
+	serviceBuildPath := path.Join(config.BuildDir, serviceName+".zip")
+
 	// check there's a local build
-	if _, err := os.Stat(".khachapuri"); os.IsNotExist(err) {
-		return errors.New("no build found. Run 'khachapuri build' first")
+	if _, err := os.Stat(serviceBuildPath); os.IsNotExist(err) {
+		return errors.New("no build found. Run 'khachapuri build [service]' first")
 	}
 	// unzip the build
 	unzippedArtifact, err := filepath.Abs("./tmp")
 	if err != nil {
 		return err
 	}
-	if err = unzipper.Unzip(".khachapuri/artifact.zip", unzippedArtifact); err != nil {
+	if err = unzipper.Unzip(serviceBuildPath, unzippedArtifact); err != nil {
 		return err
 	}
 	defer os.RemoveAll(unzippedArtifact)
@@ -42,7 +45,7 @@ func RunCommand(config *config.Config) error {
 	}
 
 	// run a remote build
-	response, err := computeExecutor.Execute(unzippedArtifact, execEnv, "execArgs")
+	response, err := computeExecutor.Execute(unzippedArtifact, execEnv, execArgs)
 	if err != nil {
 		return err
 	}

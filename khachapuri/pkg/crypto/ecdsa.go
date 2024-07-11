@@ -3,21 +3,15 @@ package crypto
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	geth_crypto "github.com/ethereum/go-ethereum/crypto"
 )
 
-func EcdsaSignMessage(data []byte, hexkey string) (*EcdsaSignature, error) {
-	privateKey, err := geth_crypto.HexToECDSA(hexkey)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func EcdsaSignMessage(data []byte, pk *EcdsaPrivateKey) (*EcdsaSignature, error) {
 	hash := geth_crypto.Keccak256Hash(data)
-	signature, err := geth_crypto.Sign(hash.Bytes(), privateKey)
+	signature, err := geth_crypto.Sign(hash.Bytes(), pk)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign message: %v", err)
 	}
@@ -25,7 +19,7 @@ func EcdsaSignMessage(data []byte, hexkey string) (*EcdsaSignature, error) {
 	return &EcdsaSignature{
 		Hash:      hash.Hex(),
 		Signature: hexutil.Encode(signature),
-		Address:   geth_crypto.PubkeyToAddress(privateKey.PublicKey).Hex(),
+		Address:   geth_crypto.PubkeyToAddress(pk.PublicKey).Hex(),
 	}, nil
 }
 

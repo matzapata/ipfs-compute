@@ -1,9 +1,15 @@
+version: 1.0
 
-spec:
-  admin: 
-    address: "0x123"
-  environment:
-    - ABC=${ABC}
-    - CBA=${CBA}
-
-
+services:
+  app:
+    build: 
+      command: make build
+    entrypoint: "./main"
+    assets: 
+      - "./public"
+      - "./main"
+    env:
+      - name: "ENV_VAR"
+        value: "123"
+    env_file:
+      - .env

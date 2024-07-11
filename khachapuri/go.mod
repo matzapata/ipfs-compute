@@ -13,6 +13,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/wabarc/ipfs-pinner v1.1.0
 	golang.org/x/crypto v0.24.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

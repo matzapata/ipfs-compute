@@ -12,10 +12,10 @@ import (
 )
 
 func SetupProxyRouter(router *chi.Mux, registryService domain.IRegistryService) {
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
 		parts := strings.Split(host, ".")
-		if len(parts) < 3 {
+		if len(parts) < 2 {
 			http.Error(w, "Invalid host", http.StatusBadRequest)
 			return
 		}

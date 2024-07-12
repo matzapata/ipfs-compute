@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
+	err := godotenv.Load(".env.provider")
 	if err != nil {
-		panic("Error loading .env file")
+		panic("Error loading .env.provider file")
 	}
 
 	loader := config.NewEnvLoader()
@@ -37,5 +37,5 @@ func main() {
 		log.Panic(err)
 	}
 
-	controller.Handle(":3000")
+	controller.Handle(":4000")
 }

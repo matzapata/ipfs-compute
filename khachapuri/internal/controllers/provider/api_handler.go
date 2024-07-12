@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/controllers/provider/routers"
 	"github.com/matzapata/ipfs-compute/provider/internal/repositories"
@@ -44,6 +45,10 @@ func NewApiHandler(cfg *config.Config) (*ApiHandler, error) {
 	// router
 	router := chi.NewRouter()
 
+	// middleware
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+
 	// setup routes
 	routers.SetupComputeRoutes(router, computeService)
 	routers.SetupHealthRotes(router)
@@ -54,7 +59,7 @@ func NewApiHandler(cfg *config.Config) (*ApiHandler, error) {
 }
 
 func (a *ApiHandler) Handle(addr string) {
-	fmt.Println("Starting server...")
+	fmt.Println("Starting server at localhost" + addr)
 	err := http.ListenAndServe(addr, a.Router)
 	if err != nil {
 		panic(err)

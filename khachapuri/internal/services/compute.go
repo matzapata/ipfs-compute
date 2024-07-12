@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
@@ -31,12 +33,20 @@ func NewComputeService(
 }
 
 func (c *ComputeService) Compute(specCid string, payerHexAddress string, computeArgs string) (res *domain.ComputeResponse, ctx *domain.ComputeContext, err error) {
+	defer func() {
+		// recover from panic to properly return ctx
+		if r := recover(); r != nil {
+			err = fmt.Errorf("error: %v", r)
+		}
+	}()
+
 	// download specification
 	artifact, err := c.ArtifactService.GetArtifactSpecification(specCid, c.Config.ProviderRsaPrivateKey)
 	if err != nil {
 		return nil, nil, err
 	}
-	// TODO: decrypt env vars
+	execEnv := []string{}
+	execEnv = append(execEnv, strings.Split(strings.TrimSpace(string(artifact.Env)), "\n")...)
 
 	// by default payer is owner
 	var payer crypto.EcdsaAddress
@@ -69,14 +79,13 @@ func (c *ComputeService) Compute(specCid string, payerHexAddress string, compute
 	if err != nil {
 		return nil, nil, err
 	}
+	ctx = &domain.ComputeContext{EscrowTransaction: tx}
 
 	// execute binary and give response
-	execEnv := []string{}
 	res, err = c.ComputeExecutor.Execute(executableDir, execEnv, computeArgs)
 	if err != nil {
-		return nil, nil, err
+		return nil, ctx, err
 	}
-	ctx = &domain.ComputeContext{EscrowTransaction: tx}
 
 	return res, ctx, nil
 

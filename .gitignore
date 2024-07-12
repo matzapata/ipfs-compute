@@ -3,5 +3,6 @@
 temp
 keys.pem
 build
-.env.local
+.env.*
+!.env.example
 .khachapuri

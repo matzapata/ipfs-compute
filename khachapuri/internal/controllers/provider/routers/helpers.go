@@ -58,11 +58,14 @@ func WriteJSON(w http.ResponseWriter, status int, data any, headers map[string]s
 }
 
 // ErrorJSON takes an error, and optionally a response status code, and generates and sends a json error response
-func ErrorJSON(w http.ResponseWriter, err error, status ...int) error {
+func ErrorJSON(w http.ResponseWriter, status int, err error, headers map[string]string) error {
 	statusCode := http.StatusBadRequest
+	if status > 0 {
+		statusCode = status
+	}
 
-	if len(status) > 0 {
-		statusCode = status[0]
+	for key, value := range headers {
+		w.Header().Set(key, value)
 	}
 
 	var payload errorJsonResponse

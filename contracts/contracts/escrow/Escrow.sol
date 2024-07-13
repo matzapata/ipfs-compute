@@ -35,10 +35,10 @@ contract Escrow is Ownable {
         require(usdcToken.balanceOf(msg.sender) >= amount, "Insufficient USDC balance");
         require(usdcToken.allowance(msg.sender, address(this)) >= amount, "Allowance too low");
 
+        balances[msg.sender] += amount;
+
         bool success = usdcToken.transferFrom(msg.sender, address(this), amount);
         require(success, "USDC transfer failed");
-
-        balances[msg.sender] += amount;
 
         emit Deposit(msg.sender, amount);
     }

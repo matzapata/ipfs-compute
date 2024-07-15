@@ -7,10 +7,7 @@ import (
 )
 
 func main() {
-	err := godotenv.Load(".env.gateway")
-	if err != nil {
-		panic("Error loading .env.gateway file")
-	}
+	godotenv.Load(".env.gateway")
 
 	loader := config.NewEnvLoader()
 	cfg := config.Config{

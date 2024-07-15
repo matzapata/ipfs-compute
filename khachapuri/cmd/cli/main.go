@@ -1,9 +1,12 @@
 package main
 
 import (
+	"os"
+
 	"github.com/joho/godotenv"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	cli_controller "github.com/matzapata/ipfs-compute/provider/internal/controllers/cli"
+	"github.com/matzapata/ipfs-compute/provider/pkg/system"
 )
 
 func main() {
@@ -15,7 +18,9 @@ func main() {
 		EscrowAddress:   config.EscrowAddress,
 		UsdcAddress:     config.UsdcAddress,
 		ArtifactMaxSize: config.ArtifactMaxSize,
-		BuildDir:        ".khachapuri",
+		ArtifactsPath:   system.BuildCwdPath("artifacts"),
+		CachePath:       system.BuildCwdPath("cache"),
+		TempPath:        system.BuildCwdPath("tmp"),
 
 		EthRpc:                   envLoader.LoadString("ETH_RPC", true),
 		IpfsGateway:              envLoader.LoadString("IPFS_GATEWAY", true),
@@ -27,6 +32,7 @@ func main() {
 		ProviderRsaPublicKey:     envLoader.LoadRsaPublicKey("PROVIDER_RSA_PUBLIC_KEY", false),
 		ProviderComputeUnitPrice: envLoader.LoadBigInt("PROVIDER_COMPUTE_UNIT_PRICE", false),
 	}
+	defer os.RemoveAll(cfg.TempPath)
 
 	controller := cli_controller.NewCliHandler(&cfg)
 	controller.Handle()

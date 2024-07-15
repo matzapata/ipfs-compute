@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
@@ -9,9 +10,11 @@ import (
 )
 
 func main() {
-	err := godotenv.Load(".env.provider")
+	godotenv.Load(".env.provider")
+
+	cachePath, err := os.MkdirTemp("cache", "khachapuri-cache-*")
 	if err != nil {
-		panic("Error loading .env.provider file")
+		panic(err)
 	}
 
 	loader := config.NewEnvLoader()
@@ -20,6 +23,8 @@ func main() {
 		EscrowAddress:   config.EscrowAddress,
 		UsdcAddress:     config.UsdcAddress,
 		ArtifactMaxSize: config.ArtifactMaxSize,
+		TempPath:        os.TempDir(),
+		CachePath:       cachePath,
 
 		ProviderComputeUnitPrice: loader.LoadBigInt("PROVIDER_COMPUTE_UNIT_PRICE", true),
 		EthRpc:                   loader.LoadString("ETH_RPC", true),

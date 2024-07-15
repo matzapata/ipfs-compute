@@ -16,51 +16,48 @@ import (
 type IpfsArtifactRepository struct {
 	Gateway string
 	Pinata  pinata.Pinata
+	Cache   IFileCache
 }
 
-func NewIpfsArtifactRepository(gateway string, pinataApiKey string, pinataSecret string) *IpfsArtifactRepository {
+func NewIpfsArtifactRepository(cache IFileCache, gateway string, pinataApiKey string, pinataSecret string) *IpfsArtifactRepository {
 	return &IpfsArtifactRepository{
 		Gateway: gateway,
 		Pinata:  pinata.Pinata{Apikey: pinataApiKey, Secret: pinataSecret},
+		Cache:   cache,
 	}
 }
 
-func (dt *IpfsArtifactRepository) GetZippedExecutable(cid string, maxSize uint) (zipPath string, err error) {
-	data, err := downloadFile(dt.Gateway, cid, int64(maxSize))
-	if err != nil {
-		return
+func (dt *IpfsArtifactRepository) GetZippedExecutable(cid string, maxSize uint) ([]byte, error) {
+	if dt.Cache != nil && dt.Cache.Exists(cid) {
+		return dt.Cache.Get(cid)
 	}
 
-	zipTempPath, err := os.CreateTemp("", "zipped-executable-*")
+	res, err := downloadFile(dt.Gateway, cid, int64(maxSize))
 	if err != nil {
-		return
-	}
-	_, err = zipTempPath.Write(data)
-	if err != nil {
-		return
+		return nil, err
 	}
 
-	return zipTempPath.Name(), nil
+	if dt.Cache != nil {
+		dt.Cache.Set(cid, res)
+	}
+	return res, nil
 }
 
-func (dt *IpfsArtifactRepository) GetSpecificationFile(cid string) (specPath string, err error) {
-	const maxSize = 1 << 20 // 1 MB
-
-	data, err := downloadFile(dt.Gateway, cid, maxSize)
-	if err != nil {
-		return
+func (dt *IpfsArtifactRepository) GetSpecificationFile(cid string) ([]byte, error) {
+	if dt.Cache != nil && dt.Cache.Exists(cid) {
+		return dt.Cache.Get(cid)
 	}
 
-	specTempPath, err := os.CreateTemp("", "*")
+	const maxSize = 1024 * 1024 // 1MB
+	res, err := downloadFile(dt.Gateway, cid, maxSize)
 	if err != nil {
-		return
-	}
-	_, err = specTempPath.Write(data)
-	if err != nil {
-		return
+		return nil, err
 	}
 
-	return specTempPath.Name(), nil
+	if dt.Cache != nil {
+		dt.Cache.Set(cid, res)
+	}
+	return res, nil
 }
 
 func (dt *IpfsArtifactRepository) PublishArtifact(artPath string) (cid string, err error) {

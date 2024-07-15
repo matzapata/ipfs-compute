@@ -43,13 +43,13 @@ func NewArtifactBuilderService(
 
 func (as *ArtifactBuilderService) BuildArtifact(serviceName string) error {
 	// check if folder exists
-	if err := system.EnsureDirExists(as.Config.BuildDir, true); err != nil {
+	if err := system.EnsureDirExists(as.Config.ArtifactsPath, true); err != nil {
 		return err
 	}
 
 	// temp folder for the deployment
-	deploymentDirPath := path.Join(as.Config.BuildDir, serviceName)
-	deploymentZipPath := path.Join(as.Config.BuildDir, serviceName+".zip")
+	deploymentDirPath := path.Join(as.Config.ArtifactsPath, serviceName)
+	deploymentZipPath := path.Join(as.Config.ArtifactsPath, serviceName+".zip")
 	defer os.RemoveAll(deploymentDirPath)
 
 	// get source files
@@ -112,7 +112,7 @@ func (as *ArtifactBuilderService) PublishArtifact(serviceName string, providerDo
 	}
 
 	// publish artifact and update specification with cid
-	artPath := path.Join(as.Config.BuildDir, serviceName+".zip")
+	artPath := path.Join(as.Config.ArtifactsPath, serviceName+".zip")
 	if _, err := os.Stat(artPath); os.IsNotExist(err) {
 		return "", err
 	}

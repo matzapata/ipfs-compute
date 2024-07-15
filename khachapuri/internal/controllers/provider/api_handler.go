@@ -25,7 +25,9 @@ func NewApiHandler(cfg *config.Config) (*ApiHandler, error) {
 	}
 
 	// repositories
+	fileSystemCache := repositories.NewFileSystemCache(".cache")
 	artifactRepository := repositories.NewIpfsArtifactRepository(
+		fileSystemCache,
 		cfg.IpfsGateway,
 		cfg.IpfsPinataApikey,
 		cfg.IpfsPinataSecret,

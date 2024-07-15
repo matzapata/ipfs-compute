@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/joho/godotenv"
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
@@ -13,22 +12,19 @@ import (
 	"github.com/matzapata/ipfs-compute/provider/pkg/archive"
 )
 
-func RunCommand(config *config.Config, serviceName string, execArgs string) error {
+func RunCommand(config *config.Config, artifactName string, execArgs string) error {
 	unzipper := archive.NewUnzipper()
 	computeExecutor := services.NewComputeExecutor(nil)
 
-	serviceBuildPath := path.Join(config.BuildDir, serviceName+".zip")
+	artifactPath := path.Join(config.ArtifactsPath, artifactName+".zip")
 
 	// check there's a local build
-	if _, err := os.Stat(serviceBuildPath); os.IsNotExist(err) {
+	if _, err := os.Stat(artifactPath); os.IsNotExist(err) {
 		return errors.New("no build found. Run 'khachapuri build [service]' first")
 	}
 	// unzip the build
-	unzippedArtifact, err := filepath.Abs("./tmp")
-	if err != nil {
-		return err
-	}
-	if err = unzipper.Unzip(serviceBuildPath, unzippedArtifact); err != nil {
+	unzippedArtifact := path.Join(config.TempPath, artifactName)
+	if err := unzipper.UnzipFilepath(artifactPath, unzippedArtifact); err != nil {
 		return err
 	}
 	defer os.RemoveAll(unzippedArtifact)

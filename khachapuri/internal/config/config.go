@@ -12,7 +12,9 @@ type Config struct {
 	IpfsPinataApikey         string
 	IpfsPinataSecret         string
 	ArtifactMaxSize          uint
-	BuildDir                 string
+	ArtifactsPath            string
+	CachePath                string
+	TempPath                 string
 	ProviderEcdsaAddress     *crypto.EcdsaAddress
 	ProviderEcdsaPrivateKey  *crypto.EcdsaPrivateKey
 	ProviderRsaPrivateKey    *crypto.RsaPrivateKey

@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/matzapata/ipfs-compute/provider/internal/config"
 	"github.com/matzapata/ipfs-compute/provider/internal/domain"
@@ -30,38 +29,28 @@ func NewArtifactService(
 }
 
 func (d *ArtifactService) GetArtifact(cid string) (string, error) {
-	zippedExecutablePath, err := d.ArtifactRepository.GetZippedExecutable(cid, d.Config.ArtifactMaxSize)
+	executable, err := d.ArtifactRepository.GetZippedExecutable(cid, d.Config.ArtifactMaxSize)
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(zippedExecutablePath)
 
-	dir, err := os.MkdirTemp("", "khachapuri")
-	if err != nil {
-		return "", err
-	}
-	if err = d.Unzipper.Unzip(zippedExecutablePath, dir); err != nil {
+	art := fmt.Sprintf("%s/artifacts/%s.zip", d.Config.TempPath, cid)
+	if err = d.Unzipper.UnzipBytes(executable, art); err != nil {
 		return "", err
 	}
 
-	return dir, nil
+	return art, nil
 }
 
 func (d *ArtifactService) GetArtifactSpecification(cid string, providerRsaPrivateKey *crypto.RsaPrivateKey) (*domain.ArtifactSpec, error) {
-	specPath, err := d.ArtifactRepository.GetSpecificationFile(cid)
+	spec, err := d.ArtifactRepository.GetSpecificationFile(cid)
 	if err != nil {
 		return nil, err
 	}
 
-	// read the JSON encSpecData
-	specData, err := os.ReadFile(specPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading JSON data: %v", err)
-	}
-
 	// unmarshal the JSON data
 	var artifact domain.ArtifactSpec
-	if err = json.Unmarshal(specData, &artifact); err != nil {
+	if err = json.Unmarshal(spec, &artifact); err != nil {
 		return nil, fmt.Errorf("error unmarshalling metadata json: %v", err)
 	}
 

@@ -150,3 +150,4 @@ TODO: add to contract trial credits giveaway. Users cannot withdraw, neither pro
 TODO: reputation system
 TODO: Allow unencrypted deployments, anybody can run. Cool also if there can be more than one runner
 TODO: option to encrypt deployment at rest
+TODO: Cli can quickly spin up provider

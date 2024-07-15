@@ -17,7 +17,8 @@ func BuildCommand(cfg *config.Config, serviceName string) error {
 	}
 
 	sourceRepo := repositories.NewSystemSourceRepository()
-	artifactRepo := repositories.NewIpfsArtifactRepository(cfg.IpfsGateway, cfg.IpfsPinataApikey, cfg.IpfsPinataSecret)
+	fileSystemCache := repositories.NewFileSystemCache(cfg.CachePath)
+	artifactRepo := repositories.NewIpfsArtifactRepository(fileSystemCache, cfg.IpfsGateway, cfg.IpfsPinataApikey, cfg.IpfsPinataSecret)
 	sourceService := services.NewSourceService(sourceRepo)
 	registryService := services.NewRegistryService(cfg, ethClient)
 	artifactBuilder := services.NewArtifactBuilderService(cfg, sourceService, registryService, artifactRepo)

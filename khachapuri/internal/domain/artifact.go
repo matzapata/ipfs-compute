@@ -10,13 +10,13 @@ type ArtifactSpec struct {
 }
 
 type IArtifactService interface {
-	GetArtifact(cid string) (artifactPath string, err error)
+	GetArtifact(cid string) (string, error)
 	GetArtifactSpecification(cid string, providerRsaPrivateKey *rsa.PrivateKey) (*ArtifactSpec, error)
 }
 
 type IArtifactRepository interface {
-	GetZippedExecutable(cid string, maxSize uint) (zipPath string, err error)
-	GetSpecificationFile(cid string) (specPath string, err error)
+	GetZippedExecutable(cid string, maxSize uint) ([]byte, error)
+	GetSpecificationFile(cid string) ([]byte, error)
 	PublishArtifact(artPath string) (cid string, err error)
 	PublishArtifactSpecification(spec *ArtifactSpec) (cid string, err error)
 }

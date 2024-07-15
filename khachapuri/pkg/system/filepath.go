@@ -16,6 +16,13 @@ func BuildLocalPath(path string) string {
 	return filepath.Join(exeDir, path)
 }
 
+func Exists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 func EnsureDirExists(path string, empty bool) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return os.MkdirAll(path, 0755)
